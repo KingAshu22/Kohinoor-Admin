@@ -3,11 +3,37 @@
 import { ColumnDef } from "@tanstack/react-table";
 import Delete from "../custom ui/Delete";
 import Link from "next/link";
+import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { Button } from "../ui/button";
 
 export const columns: ColumnDef<ProductType>[] = [
   {
+    accessorKey: "expense",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Order
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+  {
     accessorKey: "title",
-    header: "Title",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Title
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
     cell: ({ row }) => (
       <Link href={`/products/${row.original._id}`} className="hover:text-red-1">
         {row.original.title}
@@ -30,11 +56,17 @@ export const columns: ColumnDef<ProductType>[] = [
   },
   {
     accessorKey: "price",
-    header: "Price (₹)",
-  },
-  {
-    accessorKey: "expense",
-    header: "Expense (₹)",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Price (₹)
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
   },
   {
     id: "actions",
