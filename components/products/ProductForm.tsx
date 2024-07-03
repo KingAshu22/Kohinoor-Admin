@@ -79,7 +79,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
           title: "",
           description: "",
           media: [],
-          category: "",
+          category: "Gross",
           collections: [],
           tags: [],
           sizes: [],
@@ -241,13 +241,15 @@ const ProductForm: React.FC<ProductFormProps> = ({ initialData }) => {
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
+                  <FormLabel>Type</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Category"
+                    <select
                       {...field}
-                      onKeyDown={handleKeyPress}
-                    />
+                      className="block w-full p-2.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
+                    >
+                      <option value="Gross">Gross</option>
+                      <option value="Individual">Individual</option>
+                    </select>
                   </FormControl>
                   <FormMessage className="text-red-1" />
                 </FormItem>
