@@ -1,6 +1,9 @@
 import Customer from "../models/Customer";
 import Order from "../models/Order";
 import { connectToDB } from "../mongoDB"
+import RawMaterial from '../models/RawMaterial';
+import Polish from "../models/Polish";
+import Color from "../models/Color";
 
 export const getTotalSales = async () => {
   await connectToDB();
@@ -8,6 +11,27 @@ export const getTotalSales = async () => {
   const totalOrders = orders.length;
   const totalRevenue = orders.reduce((acc, order) => acc + order.totalAmount, 0)
   return { totalOrders, totalRevenue }
+}
+
+export const getTotalRaw = async () => {
+  await connectToDB();
+  const rawMaterials = await RawMaterial.find()
+  const totalGross = rawMaterials.reduce((acc, rawMaterial) => acc + rawMaterial.gross, 0);
+  return totalGross;
+}
+
+export const getTotalPolish = async () => {
+  await connectToDB();
+  const polishes = await Polish.find()
+  const totalGross = polishes.reduce((acc, polish) => acc + polish.gross, 0);
+  return totalGross;
+}
+
+export const getTotalColor = async () => {
+  await connectToDB();
+  const colors = await Color.find()
+  const totalGross = colors.reduce((acc, color) => acc + color.gross, 0);
+  return totalGross;
 }
 
 export const getTotalCustomers = async () => {
@@ -29,7 +53,7 @@ export const getSalesPerMonth = async () => {
     return acc
   }, {})
 
-  const graphData = Array.from({ length: 12}, (_, i) => {
+  const graphData = Array.from({ length: 12 }, (_, i) => {
     const month = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(0, i))
     // if i === 5 => month = "Jun"
     return { name: month, sales: salesPerMonth[i] || 0 }

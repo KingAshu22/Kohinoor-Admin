@@ -1,8 +1,12 @@
 import {
+  Brush,
+  Goal,
   LayoutDashboard,
+  Pipette,
   Shapes,
   ShoppingBag,
   Tag,
+  User,
   UsersRound,
 } from "lucide-react";
 
@@ -26,6 +30,26 @@ export const navLinks = [
     url: "/orders",
     icon: <ShoppingBag />,
     label: "Orders",
+  },
+  {
+    url: "/vendors",
+    icon: <User />,
+    label: "Vendors",
+  },
+  {
+    url: "/raw-material",
+    icon: <Goal />,
+    label: "Raw Material",
+  },
+  {
+    url: "/polish",
+    icon: <Brush />,
+    label: "Polish",
+  },
+  {
+    url: "/color",
+    icon: <Pipette />,
+    label: "Color",
   },
   {
     url: "/customers",
