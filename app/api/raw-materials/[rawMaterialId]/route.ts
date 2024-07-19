@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-
 import { connectToDB } from "@/lib/mongoDB";
 import RawMaterial from "@/lib/models/RawMaterial";
 
@@ -10,7 +9,7 @@ export const GET = async (
     try {
         await connectToDB();
 
-        const rawMaterial = await RawMaterial.findById(params.rawMaterialId).sort({ expense: "asc" });
+        const rawMaterial = await RawMaterial.findById(params.rawMaterialId);
 
         if (!rawMaterial) {
             return new NextResponse(
@@ -39,15 +38,31 @@ export const PUT = async (
             return new NextResponse("Raw Material not found", { status: 404 });
         }
 
-        const { product, totalWeight, partialWeight, vendor, gross, pieces, date } = await req.json();
+        const { date, products } = await req.json();
 
-        if (!product || !totalWeight || !partialWeight || !vendor || !date) {
-            return new NextResponse("Product, Total Weight, Partial Weight, Vendor, and Date are required", { status: 400 });
+        if (!date || !products || !products.length) {
+            return new NextResponse("Date and products array are required", { status: 400 });
+        }
+
+        const invalidProduct = products.some((product: any) =>
+            !product.product ||
+            !product.totalWeight ||
+            !product.partialWeight ||
+            !product.vendor ||
+            !product.rate ||
+            !product.gross ||
+            !product.pieces
+        );
+
+        if (invalidProduct) {
+            return new NextResponse("Incomplete product data", {
+                status: 400,
+            });
         }
 
         rawMaterial = await RawMaterial.findByIdAndUpdate(
             params.rawMaterialId,
-            { product, totalWeight, partialWeight, vendor, gross, pieces, date },
+            { date, products },
             { new: true }
         );
 

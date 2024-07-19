@@ -1,12 +1,14 @@
 import mongoose from "mongoose";
 
 const ColorSchema = new mongoose.Schema({
-    product: String,
-    totalWeight: Number,
-    partialWeight: Number,
-    gross: Number,
-    pieces: Number,
-    date: String
+    date: String,
+    products: [{
+        product: String,
+        totalWeight: Number,
+        partialWeight: Number,
+        gross: Number,
+        pieces: Number,
+    }]
 }, { toJSON: { getters: true } });
 
 const Color = mongoose.models.Color || mongoose.model("Color", ColorSchema);

@@ -32,14 +32,19 @@ type VendorType = {
 
 type materialType = {
   _id: string;
-  product: string;
-  totalWeight: number;
-  partialWeight: number;
-  vendor: string;
-  gross: number;
-  pieces: number;
   date: string;
+  products: {
+    product: string;
+    totalWeight: number;
+    partialWeight: number;
+    vendor: string;
+    rate: number;
+    gross: number;
+    pieces: number;
+  }[];
 }
+
+
 
 type OrderColumnType = {
   _id: string;

@@ -30,7 +30,27 @@ export const columns: ColumnDef<materialType>[] = [
     ),
   },
   {
-    accessorKey: "vendor",
+    accessorKey: "products",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Products
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const products = Array.from(
+        new Set(row.original.products.map((product: any) => product.product))
+      );
+      return <div>{products.join(", ")}</div>;
+    },
+  },
+  {
+    accessorKey: "products",
     header: ({ column }) => {
       return (
         <Button
@@ -41,6 +61,12 @@ export const columns: ColumnDef<materialType>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
+    },
+    cell: ({ row }) => {
+      const vendors = Array.from(
+        new Set(row.original.products.map((product: any) => product.vendor))
+      );
+      return <div>{vendors.join(", ")}</div>;
     },
   },
   {
@@ -56,6 +82,13 @@ export const columns: ColumnDef<materialType>[] = [
         </Button>
       );
     },
+    cell: ({ row }) => {
+      const totalWeight = row.original.products.reduce(
+        (acc: number, product: any) => acc + product.totalWeight,
+        0
+      );
+      return <div>{totalWeight.toLocaleString("en-in")}</div>;
+    },
   },
   {
     accessorKey: "pieces",
@@ -70,6 +103,13 @@ export const columns: ColumnDef<materialType>[] = [
         </Button>
       );
     },
+    cell: ({ row }) => {
+      const pieces = row.original.products.reduce(
+        (acc: number, product: any) => acc + product.pieces,
+        0
+      );
+      return <div>{pieces.toLocaleString("en-in")}</div>;
+    },
   },
   {
     accessorKey: "gross",
@@ -83,6 +123,13 @@ export const columns: ColumnDef<materialType>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
+    },
+    cell: ({ row }) => {
+      const gross = row.original.products.reduce(
+        (acc: number, product: any) => acc + product.gross,
+        0
+      );
+      return <div>{gross.toLocaleString("en-in")}</div>;
     },
   },
   {

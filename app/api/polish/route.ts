@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-
 import { connectToDB } from "@/lib/mongoDB";
 import Polish from "@/lib/models/Polish";
 
@@ -7,31 +6,31 @@ export const POST = async (req: NextRequest) => {
     try {
         await connectToDB();
 
-        const {
-            product,
-            totalWeight,
-            partialWeight,
-            vendor,
-            gross,
-            pieces,
-            date,
-        } = await req.json();
+        const { date, products } = await req.json();
 
-        if (!product || !totalWeight || !partialWeight || !vendor || !gross || !pieces || !date) {
+        if (!date || !products || !products.length) {
             return new NextResponse("Not enough data to create a Polish Entry", {
                 status: 400,
             });
         }
 
-        const newPolish = await Polish.create({
-            product,
-            totalWeight,
-            partialWeight,
-            vendor,
-            gross,
-            pieces,
-            date,
-        });
+        const invalidProduct = products.some((product: any) =>
+            !product.product ||
+            !product.totalWeight ||
+            !product.partialWeight ||
+            !product.vendor ||
+            !product.rate ||
+            !product.gross ||
+            !product.pieces
+        );
+
+        if (invalidProduct) {
+            return new NextResponse("Incomplete product data", {
+                status: 400,
+            });
+        }
+
+        const newPolish = await Polish.create({ date, products });
 
         await newPolish.save();
 
@@ -46,7 +45,7 @@ export const GET = async (req: NextRequest) => {
     try {
         await connectToDB();
 
-        const polish = await Polish.find()
+        const polish = await Polish.find();
 
         return new NextResponse(JSON.stringify(polish), { status: 200 });
     } catch (err) {

@@ -9,16 +9,13 @@ export const POST = async (req: NextRequest) => {
 
     const {
       name,
-      address,
-      contact,
-      rate,
       type
     } = await req.json();
 
     console.log(req.json);
 
 
-    if (!name || !address || !contact || !rate || !type) {
+    if (!name || !type) {
       return new NextResponse("Not enough data to create a vendor", {
         status: 400,
       });
@@ -26,9 +23,6 @@ export const POST = async (req: NextRequest) => {
 
     const newVendor = await Vendor.create({
       name,
-      address,
-      contact,
-      rate,
       type
     });
 

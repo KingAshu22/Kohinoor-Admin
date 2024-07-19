@@ -23,9 +23,6 @@ import Loader from "../custom ui/Loader";
 
 const formSchema = z.object({
   name: z.string().min(2),
-  address: z.string().min(2).max(500).trim(),
-  contact: z.string().min(10),
-  rate: z.string(),
   type: z.string(),
 });
 
@@ -46,9 +43,6 @@ const VendorForm: React.FC<VendorFormProps> = ({ initialData }) => {
         }
       : {
           name: "",
-          address: "",
-          contact: "",
-          rate: "",
           type: "",
         },
   });
@@ -79,7 +73,7 @@ const VendorForm: React.FC<VendorFormProps> = ({ initialData }) => {
 
       if (res.ok) {
         setLoading(false);
-        toast.success(`Vendor ${initialData ? "updated" : "created"}`);
+        toast.success(`Vendor ${initialData ? "Updated" : "Created"}`);
         router.push("/vendors");
       } else {
         console.log(res);
@@ -101,7 +95,7 @@ const VendorForm: React.FC<VendorFormProps> = ({ initialData }) => {
           <Delete id={initialData._id} item="vendor" />
         </div>
       ) : (
-        <p className="text-heading2-bold">Create Product</p>
+        <p className="text-heading2-bold">Create Vendor</p>
       )}
       <Separator className="bg-grey-1 mt-4 mb-7" />
       <Form {...form}>
@@ -115,58 +109,6 @@ const VendorForm: React.FC<VendorFormProps> = ({ initialData }) => {
                 <FormControl>
                   <Input
                     placeholder="Name"
-                    {...field}
-                    onKeyDown={handleKeyPress}
-                  />
-                </FormControl>
-                <FormMessage className="text-red-1" />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="address"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Address</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Address"
-                    {...field}
-                    onKeyDown={handleKeyPress}
-                  />
-                </FormControl>
-                <FormMessage className="text-red-1" />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="contact"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Contact</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Contact"
-                    {...field}
-                    onKeyDown={handleKeyPress}
-                  />
-                </FormControl>
-                <FormMessage className="text-red-1" />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="rate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Rate / Gross</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="Rate"
                     {...field}
                     onKeyDown={handleKeyPress}
                   />

@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -22,13 +22,21 @@ import Delete from "../custom ui/Delete";
 import Loader from "../custom ui/Loader";
 
 const formSchema = z.object({
-  product: z.string().min(2),
-  totalWeight: z.preprocess((val) => Number(val), z.number().positive()),
-  partialWeight: z.preprocess((val) => Number(val), z.number().positive()),
-  vendor: z.string().min(2),
-  gross: z.number().positive().optional(),
-  pieces: z.number().positive().optional(),
   date: z.string().min(2),
+  products: z.array(
+    z.object({
+      product: z.string().min(2),
+      totalWeight: z.preprocess((val) => Number(val), z.number().positive()),
+      partialWeight: z.preprocess((val) => Number(val), z.number().positive()), // Partial Weight in grams
+      vendor: z.string().min(2),
+      rate: z.preprocess(
+        (val) => Number(val),
+        z.number().positive().optional()
+      ),
+      gross: z.number().positive().optional(),
+      pieces: z.number().positive().optional(),
+    })
+  ),
 });
 
 interface RawMaterialFormProps {
@@ -38,11 +46,8 @@ interface RawMaterialFormProps {
 const RawMaterialForm: React.FC<RawMaterialFormProps> = ({ initialData }) => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [products, setProducts] = useState<ProductType[]>([]);
+  const [productsList, setProductsList] = useState<ProductType[]>([]);
   const [vendors, setVendors] = useState<VendorType[]>([]);
-  const [calculateClicked, setCalculateClicked] = useState(
-    initialData ? true : false
-  ); // State to track if Calculate button is clicked
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,7 +64,7 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({ initialData }) => {
           (vendor: VendorType) => vendor.type === "Raw Material"
         );
 
-        setProducts(productsData);
+        setProductsList(productsData);
         setVendors(filteredVendors);
       } catch (err) {
         console.log("[fetchData]", err);
@@ -75,12 +80,22 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({ initialData }) => {
     defaultValues: initialData
       ? { ...initialData }
       : {
-          product: "",
-          totalWeight: 0,
-          partialWeight: 0,
-          vendor: "",
           date: new Date().toISOString().split("T")[0], // Pre-fill with today's date
+          products: [
+            {
+              product: "",
+              totalWeight: 0,
+              partialWeight: 0,
+              vendor: "",
+              rate: 0,
+            },
+          ],
         },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "products",
   });
 
   const handleKeyPress = (
@@ -97,10 +112,9 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({ initialData }) => {
     totalWeight: number,
     partialWeight: number
   ) => {
-    const gross = Math.round(totalWeight / partialWeight);
+    const gross = Math.round(totalWeight / (partialWeight / 1000)); // Convert grams to kg
     const pieces = gross * 144; // Assuming 144 pieces per gross
-    form.setValue("gross", gross); // Set value of gross in the form
-    form.setValue("pieces", pieces); // Set value of pieces in the form
+    return { gross, pieces };
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -160,103 +174,153 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({ initialData }) => {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="product"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Product</FormLabel>
-                <FormControl>
-                  <select {...field}>
-                    <option value="">Select a product</option>
-                    {products.map((product) => (
-                      <option key={product._id} value={product.title}>
-                        {product.title}
-                      </option>
-                    ))}
-                  </select>
-                </FormControl>
-                <FormMessage className="text-red-1" />
-              </FormItem>
-            )}
-          />
 
-          <FormField
-            control={form.control}
-            name="vendor"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Vendor</FormLabel>
-                <FormControl>
-                  <select {...field}>
-                    <option value="">Select a vendor</option>
-                    {vendors.map((vendor) => (
-                      <option key={vendor._id} value={vendor.name}>
-                        {vendor.name}
-                      </option>
-                    ))}
-                  </select>
-                </FormControl>
-                <FormMessage className="text-red-1" />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="totalWeight"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Total Weight (kg)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="Total Weight"
-                    {...field}
-                    onKeyDown={handleKeyPress}
-                  />
-                </FormControl>
-                <FormMessage className="text-red-1" />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="partialWeight"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Partial Weight (1 gross = 144 pieces)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="Partial Weight"
-                    {...field}
-                    onKeyDown={handleKeyPress}
-                  />
-                </FormControl>
-                <FormMessage className="text-red-1" />
-                {!calculateClicked && (
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      const totalWeight = form.getValues().totalWeight;
-                      const partialWeight = field.value as number;
-                      calculateGrossAndPieces(totalWeight, partialWeight);
-                      setCalculateClicked(true);
-                    }}
-                    className="bg-blue-1 text-white mt-2"
-                  >
-                    Calculate
-                  </Button>
-                )}
-              </FormItem>
-            )}
-          />
-          {calculateClicked && ( // Only show gross and pieces fields after Calculate button is clicked
-            <>
+          {fields.map((item, index) => (
+            <div
+              key={item.id}
+              className="grid lg:grid-cols-8 md:grid-cols-4 sm:grid-cols-2 gap-2 items-center"
+            >
               <FormField
                 control={form.control}
-                name="gross"
+                name={`products.${index}.product`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Product</FormLabel>
+                    <br />
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="border-gray border-2 w-32 h-10 rounded-lg"
+                      >
+                        <option value="">Select a product</option>
+                        {productsList.map((product) => (
+                          <option key={product._id} value={product.title}>
+                            {product.title}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <FormMessage className="text-red-1" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name={`products.${index}.vendor`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vendor</FormLabel>
+                    <br />
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="border-gray border-2 w-32 h-10 rounded-lg"
+                      >
+                        <option value="">Select a vendor</option>
+                        {vendors.map((vendor) => (
+                          <option key={vendor._id} value={vendor.name}>
+                            {vendor.name}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <FormMessage className="text-red-1" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name={`products.${index}.totalWeight`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total Weight (kg)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Total Weight"
+                        {...field}
+                        onKeyDown={handleKeyPress}
+                        className="w-28"
+                        onChange={(e) => {
+                          field.onChange(e);
+                          const totalWeight = Number(e.target.value);
+                          const partialWeight = form.getValues(
+                            `products.${index}.partialWeight`
+                          );
+                          const { gross, pieces } = calculateGrossAndPieces(
+                            totalWeight,
+                            partialWeight
+                          );
+                          form.setValue(`products.${index}.gross`, gross);
+                          form.setValue(`products.${index}.pieces`, pieces);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-1" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name={`products.${index}.partialWeight`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="whitespace-nowrap">
+                      Partial Weight (g)
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Partial Weight"
+                        className="w-28"
+                        {...field}
+                        onKeyDown={handleKeyPress}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          const partialWeight = Number(e.target.value);
+                          const totalWeight = form.getValues(
+                            `products.${index}.totalWeight`
+                          );
+                          const { gross, pieces } = calculateGrossAndPieces(
+                            totalWeight,
+                            partialWeight
+                          );
+                          form.setValue(`products.${index}.gross`, gross);
+                          form.setValue(`products.${index}.pieces`, pieces);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-1" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name={`products.${index}.rate`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rate/Gross</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Rate/Gross"
+                        className="w-28"
+                        {...field}
+                        onKeyDown={handleKeyPress}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-1" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name={`products.${index}.gross`}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gross</FormLabel>
@@ -264,6 +328,7 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({ initialData }) => {
                       <Input
                         type="number"
                         placeholder="Gross"
+                        className="w-28"
                         {...field}
                         onKeyDown={handleKeyPress}
                         disabled
@@ -273,9 +338,10 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({ initialData }) => {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
-                name="pieces"
+                name={`products.${index}.pieces`}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Pieces</FormLabel>
@@ -283,6 +349,7 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({ initialData }) => {
                       <Input
                         type="number"
                         placeholder="Pieces"
+                        className="w-28"
                         {...field}
                         onKeyDown={handleKeyPress}
                         disabled
@@ -292,8 +359,35 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({ initialData }) => {
                   </FormItem>
                 )}
               />
-            </>
-          )}
+
+              <Button
+                type="button"
+                onClick={() => remove(index)}
+                className="bg-red-500 text-white mt-8 w-2"
+              >
+                X
+              </Button>
+            </div>
+          ))}
+
+          <Button
+            type="button"
+            onClick={() =>
+              append({
+                product: "",
+                totalWeight: 0,
+                partialWeight: 0,
+                vendor: "",
+                rate: 0,
+              })
+            }
+            className="bg-blue-1 text-white"
+          >
+            Add Product
+          </Button>
+
+          <Separator className="bg-grey-1 mt-4 mb-7" />
+
           <div className="flex gap-10">
             <Button type="submit" className="bg-blue-1 text-white">
               Submit

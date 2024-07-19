@@ -1,77 +1,92 @@
 import { NextRequest, NextResponse } from "next/server";
-
 import { connectToDB } from "@/lib/mongoDB";
 import Polish from "@/lib/models/Polish";
 
 export const GET = async (
     req: NextRequest,
-    { params }: { params: { polishMaterialId: string } }
+    { params }: { params: { polishId: string } }
 ) => {
     try {
         await connectToDB();
 
-        const polishMaterial = await Polish.findById(params.polishMaterialId).sort({ expense: "asc" });
+        const polish = await Polish.findById(params.polishId);
 
-        if (!polishMaterial) {
+        if (!polish) {
             return new NextResponse(
-                JSON.stringify({ message: "Polish Material not found" }),
+                JSON.stringify({ message: "Polish Entry not found" }),
                 { status: 404 }
             );
         }
 
-        return NextResponse.json(polishMaterial, { status: 200 });
+        return NextResponse.json(polish, { status: 200 });
     } catch (err) {
-        console.log("[polishMaterialId_GET]", err);
+        console.log("[polishId_GET]", err);
         return new NextResponse("Internal error", { status: 500 });
     }
 };
 
 export const PUT = async (
     req: NextRequest,
-    { params }: { params: { polishMaterialId: string } }
+    { params }: { params: { polishId: string } }
 ) => {
     try {
         await connectToDB();
 
-        let polishMaterial = await Polish.findById(params.polishMaterialId);
+        let polish = await Polish.findById(params.polishId);
 
-        if (!polishMaterial) {
-            return new NextResponse("Polish Material not found", { status: 404 });
+        if (!polish) {
+            return new NextResponse("Polish Entry not found", { status: 404 });
         }
 
-        const { product, totalWeight, partialWeight, vendor, gross, pieces, date } = await req.json();
+        const { date, products } = await req.json();
 
-        if (!product || !totalWeight || !partialWeight || !vendor || !date) {
-            return new NextResponse("Product, Total Weight, Partial Weight, Vendor, and Date are required", { status: 400 });
+        if (!date || !products || !products.length) {
+            return new NextResponse("Date and products array are required", { status: 400 });
         }
 
-        polishMaterial = await Polish.findByIdAndUpdate(
-            params.polishMaterialId,
-            { product, totalWeight, partialWeight, vendor, gross, pieces, date },
+        const invalidProduct = products.some((product: any) =>
+            !product.product ||
+            !product.totalWeight ||
+            !product.partialWeight ||
+            !product.vendor ||
+            !product.rate ||
+            !product.gross ||
+            !product.pieces
+        );
+
+        if (invalidProduct) {
+            return new NextResponse("Incomplete product data", {
+                status: 400,
+            });
+        }
+
+        polish = await Polish.findByIdAndUpdate(
+            params.polishId,
+            { date, products },
             { new: true }
         );
 
-        await polishMaterial.save();
+        await polish.save();
 
-        return NextResponse.json(polishMaterial, { status: 200 });
+        return NextResponse.json(polish, { status: 200 });
     } catch (err) {
-        console.log("[polishMaterialId_PUT]", err);
+        console.log("[polishId_PUT]", err);
         return new NextResponse("Internal error", { status: 500 });
     }
 };
 
 export const DELETE = async (
     req: NextRequest,
-    { params }: { params: { polishMaterialId: string } }
+    { params }: { params: { polishId: string } }
 ) => {
     try {
         await connectToDB();
 
-        await Polish.findByIdAndDelete(params.polishMaterialId);
+        await Polish.findByIdAndDelete(params.polishId);
 
-        return new NextResponse("Polish Material is deleted", { status: 200 });
+        return new NextResponse("Polish Entry is deleted", { status: 200 });
     } catch (err) {
-        console.log("[polishMaterialId_DELETE]", err);
+        console.log("[polishId_DELETE]", err);
         return new NextResponse("Internal error", { status: 500 });
     }
 };

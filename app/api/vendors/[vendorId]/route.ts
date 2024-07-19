@@ -39,15 +39,15 @@ export const PUT = async (
             return new NextResponse("Vendor not found", { status: 404 });
         }
 
-        const { name, address, contact, rate, type } = await req.json();
+        const { name, type } = await req.json();
 
-        if (!name || !address || !contact || !rate || !type) {
-            return new NextResponse("Name, Address, Contact, Rate and Type are required", { status: 400 });
+        if (!name || !type) {
+            return new NextResponse("Name and Type are required", { status: 400 });
         }
 
         vendor = await Vendor.findByIdAndUpdate(
             params.vendorId,
-            { name, address, contact, rate, type },
+            { name, type },
             { new: true }
         );
 
