@@ -1,7 +1,9 @@
 import {
+  Boxes,
   Brush,
   Goal,
   LayoutDashboard,
+  Package,
   Pipette,
   Shapes,
   ShoppingBag,
@@ -50,6 +52,16 @@ export const navLinks = [
     url: "/color",
     icon: <Pipette />,
     label: "Color",
+  },
+  {
+    url: "/packaging",
+    icon: <Package />,
+    label: "Packaging",
+  },
+  {
+    url: "/boxes",
+    icon: <Boxes />,
+    label: "Boxes",
   },
   {
     url: "/customers",

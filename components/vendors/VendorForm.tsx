@@ -133,6 +133,8 @@ const VendorForm: React.FC<VendorFormProps> = ({ initialData }) => {
                         Raw Material
                       </option>
                       <option value="Polishing">Polishing</option>
+                      <option value="Work From Home">Work From Home</option>
+                      <option value="Work From Office">Work From Office</option>
                     </select>
                   </FormControl>
                   <FormMessage className="text-red-1" />
