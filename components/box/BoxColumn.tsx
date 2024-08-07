@@ -21,10 +21,7 @@ export const columns: ColumnDef<materialType>[] = [
       );
     },
     cell: ({ row }) => (
-      <Link
-        href={`/packaging/${row.original._id}`}
-        className="hover:text-red-1"
-      >
+      <Link href={`/box/${row.original._id}`} className="hover:text-red-1">
         {row.original.date}
       </Link>
     ),
@@ -57,79 +54,36 @@ export const columns: ColumnDef<materialType>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Vendor
+          Box Count
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
     cell: ({ row }) => {
-      const vendors = Array.from(
-        new Set(row.original.products.map((product: any) => product.vendor))
+      const boxCount = row.original.products.map(
+        (product: any) => product.boxCount
       );
-      return <div>{vendors.join(", ")}</div>;
+      return <div>{boxCount.join(", ")}</div>;
     },
   },
   {
-    accessorKey: "totalWeight",
+    accessorKey: "quantity",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Total Weight
+          Quantity
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
     cell: ({ row }) => {
-      const totalWeight = row.original.products.reduce(
-        (acc: number, product: any) => acc + product.totalWeight,
-        0
+      const quantity = row.original.products.map(
+        (product: any) => product.quantity
       );
-      return <div>{totalWeight.toLocaleString("en-in")}</div>;
-    },
-  },
-  {
-    accessorKey: "pieces",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Pieces
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const pieces = row.original.products.reduce(
-        (acc: number, product: any) => acc + product.pieces,
-        0
-      );
-      return <div>{pieces.toLocaleString("en-in")}</div>;
-    },
-  },
-  {
-    accessorKey: "gross",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Gross
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const gross = row.original.products.reduce(
-        (acc: number, product: any) => acc + product.gross,
-        0
-      );
-      return <div>{gross.toLocaleString("en-in")}</div>;
+      return <div>{quantity.join(", ")}</div>;
     },
   },
   {

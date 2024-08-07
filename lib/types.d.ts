@@ -66,3 +66,20 @@ type CustomerType = {
   name: string;
   email: string;
 }
+
+type ProductData = {
+  product: string;
+  totalWeight: number;
+  partialWeight: number;
+  vendor?: string;
+  rate?: number;
+  gross: number;
+  pieces?: number;
+  boxCount?: number;
+  quantity?: string;
+};
+
+type Document = {
+  date: string;
+  products: ProductData[];
+};

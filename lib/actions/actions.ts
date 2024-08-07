@@ -1,63 +1,65 @@
-import Customer from "../models/Customer";
-import Order from "../models/Order";
-import { connectToDB } from "../mongoDB"
+import { connectToDB } from "../mongoDB";
 import RawMaterial from '../models/RawMaterial';
 import Polish from "../models/Polish";
 import Color from "../models/Color";
+import Packaging from "../models/Packaging";
+import Box from "../models/Box";
+import Product from "../models/Product";
 
-export const getTotalSales = async () => {
+type ProductData = {
+  product: string;
+  totalWeight: number;
+  partialWeight: number;
+  vendor?: string;
+  rate?: number;
+  gross: number;
+  pieces?: number;
+  boxCount?: number;
+  quantity?: string;
+};
+
+type Document = {
+  date: string;
+  products: ProductData[];
+};
+
+// Utility function to sum gross for a given product across multiple documents
+const sumGrossForProduct = (documents: Document[], product: string): number => {
+  return documents.reduce((total: number, doc: Document) => {
+    const productData = doc.products.find(p => p.product === product);
+    return total + (productData ? productData.totalWeight : 0);
+  }, 0);
+};
+
+export const getProductGrossData = async () => {
   await connectToDB();
-  const orders = await Order.find()
-  const totalOrders = orders.length;
-  const totalRevenue = orders.reduce((acc, order) => acc + order.totalAmount, 0)
-  return { totalOrders, totalRevenue }
-}
 
-export const getTotalRaw = async () => {
-  await connectToDB();
-  const rawMaterials = await RawMaterial.find()
-  const totalGross = rawMaterials.reduce((acc, rawMaterial) => acc + rawMaterial.gross, 0);
-  return totalGross;
-}
+  const products = await Product.find().sort({ expense: "asc" }).select('title'); // Get only the product titles
+  const rawMaterials = await RawMaterial.find();
+  const polishes = await Polish.find();
+  const colors = await Color.find();
+  const packagings = await Packaging.find();
+  const boxes = await Box.find();
 
-export const getTotalPolish = async () => {
-  await connectToDB();
-  const polishes = await Polish.find()
-  const totalGross = polishes.reduce((acc, polish) => acc + polish.gross, 0);
-  return totalGross;
-}
+  const productGrossData = await Promise.all(products.map(async (product) => {
+    const rawGross = sumGrossForProduct(rawMaterials, product.title);
+    const polishGross = sumGrossForProduct(polishes, product.title);
+    const colorGross = sumGrossForProduct(colors, product.title);
+    const packagingGross = sumGrossForProduct(packagings, product.title);
+    const boxCount = boxes.reduce((total: number, doc: Document) => {
+      const boxData = doc.products.find(p => p.product === product.title);
+      return total + (boxData?.boxCount ?? 0);
+    }, 0);
 
-export const getTotalColor = async () => {
-  await connectToDB();
-  const colors = await Color.find()
-  const totalGross = colors.reduce((acc, color) => acc + color.gross, 0);
-  return totalGross;
-}
+    return {
+      product: product.title,
+      rawGross,
+      polishGross,
+      colorGross,
+      packagingGross,
+      boxCount
+    };
+  }));
 
-export const getTotalCustomers = async () => {
-  await connectToDB();
-  const customers = await Customer.find()
-  const totalCustomers = customers.length
-  return totalCustomers
-}
-
-export const getSalesPerMonth = async () => {
-  await connectToDB()
-  const orders = await Order.find()
-
-  const salesPerMonth = orders.reduce((acc, order) => {
-    const monthIndex = new Date(order.createdAt).getMonth(); // 0 for Janruary --> 11 for December
-    acc[monthIndex] = (acc[monthIndex] || 0) + order.totalAmount;
-    // For June
-    // acc[5] = (acc[5] || 0) + order.totalAmount (orders have monthIndex 5)
-    return acc
-  }, {})
-
-  const graphData = Array.from({ length: 12 }, (_, i) => {
-    const month = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(0, i))
-    // if i === 5 => month = "Jun"
-    return { name: month, sales: salesPerMonth[i] || 0 }
-  })
-
-  return graphData
-}
+  return productGrossData;
+};

@@ -59,9 +59,9 @@ export const navLinks = [
     label: "Packaging",
   },
   {
-    url: "/boxes",
+    url: "/box",
     icon: <Boxes />,
-    label: "Boxes",
+    label: "Box",
   },
   {
     url: "/customers",
