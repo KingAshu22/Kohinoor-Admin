@@ -6,6 +6,8 @@ const ColorSchema = new mongoose.Schema({
         product: String,
         totalWeight: Number,
         partialWeight: Number,
+        vendor: String,
+        rate: Number,
         gross: Number,
         pieces: Number,
     }]

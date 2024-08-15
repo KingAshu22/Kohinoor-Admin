@@ -28,6 +28,11 @@ const formSchema = z.object({
       product: z.string().min(2),
       totalWeight: z.preprocess((val) => Number(val), z.number().positive()),
       partialWeight: z.preprocess((val) => Number(val), z.number().positive()),
+      vendor: z.string().min(2),
+      rate: z.preprocess(
+        (val) => Number(val),
+        z.number().positive().optional()
+      ),
       gross: z.number().positive().optional(),
       pieces: z.number().positive().optional(),
     })
@@ -42,15 +47,25 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [productsList, setProductsList] = useState<ProductType[]>([]);
+  const [vendors, setVendors] = useState<VendorType[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productsRes] = await Promise.all([fetch("/api/products")]);
+        const [productsRes, vendorsRes] = await Promise.all([
+          fetch("/api/products"),
+          fetch("/api/vendors"),
+        ]);
 
         const productsData = await productsRes.json();
+        const vendorsData = await vendorsRes.json();
+
+        const filteredVendors = vendorsData.filter(
+          (vendor: VendorType) => vendor.type === "Work From Office"
+        );
 
         setProductsList(productsData);
+        setVendors(filteredVendors);
       } catch (err) {
         console.log("[fetchData]", err);
         toast.error("Failed to load products");
@@ -159,7 +174,7 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
           {fields.map((item, index) => (
             <div
               key={item.id}
-              className="grid lg:grid-cols-6 md:grid-cols-3 sm:grid-cols-2 gap-2 items-center"
+              className="grid lg:grid-cols-8 md:grid-cols-4 sm:grid-cols-2 gap-2 items-center"
             >
               <FormField
                 control={form.control}
@@ -177,6 +192,31 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
                         {productsList.map((product) => (
                           <option key={product._id} value={product.title}>
                             {product.title}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
+                    <FormMessage className="text-red-1" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name={`products.${index}.vendor`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vendor</FormLabel>
+                    <br />
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="border-gray border-2 w-32 h-10 rounded-lg"
+                      >
+                        <option value="">Select a vendor</option>
+                        {vendors.map((vendor) => (
+                          <option key={vendor._id} value={vendor.name}>
+                            {vendor.name}
                           </option>
                         ))}
                       </select>
@@ -256,6 +296,26 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
 
               <FormField
                 control={form.control}
+                name={`products.${index}.rate`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rate/Gross</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Rate/Gross"
+                        className="w-28"
+                        {...field}
+                        onKeyDown={handleKeyPress}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-1" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name={`products.${index}.gross`}
                 render={({ field }) => (
                   <FormItem>
@@ -311,6 +371,8 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
             onClick={() =>
               append({
                 product: "",
+                vendor: "",
+                rate: 0,
                 totalWeight: 0,
                 partialWeight: 0,
               })
