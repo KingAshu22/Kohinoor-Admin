@@ -83,3 +83,12 @@ type Document = {
   date: string;
   products: ProductData[];
 };
+
+type DashboardData = [
+  product: string,
+  raw: number,
+  polish: number,
+  color: number,
+  packaging: number,
+  boxCount: number
+]
