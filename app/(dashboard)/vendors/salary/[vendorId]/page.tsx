@@ -36,22 +36,40 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
 
       let totalAmount = 0;
 
-      const formattedData = Array.isArray(data)
-        ? data
-            .map((entry: any) =>
-              entry.products.map((product: any) => {
-                const amount = product.rate * product.gross;
-                totalAmount += amount;
-                return {
-                  product: product.product,
-                  rate: product.rate,
-                  gross: product.gross,
-                  amount,
-                };
-              })
-            )
-            .flat()
-        : [];
+      const formattedData =
+        vendorDetails?.type === "Work From Office"
+          ? Array.isArray(data)
+            ? data
+                .map((entry: any) =>
+                  entry.products.map((product: any) => {
+                    const amount = product.rate * product.sheetCount;
+                    totalAmount += amount;
+                    return {
+                      product: product.product,
+                      rate: product.rate,
+                      gross: product.sheetCount,
+                      amount,
+                    };
+                  })
+                )
+                .flat()
+            : []
+          : Array.isArray(data)
+          ? data
+              .map((entry: any) =>
+                entry.products.map((product: any) => {
+                  const amount = product.rate * product.gross;
+                  totalAmount += amount;
+                  return {
+                    product: product.product,
+                    rate: product.rate,
+                    gross: product.gross,
+                    amount,
+                  };
+                })
+              )
+              .flat()
+          : [];
 
       setSalaryData(formattedData);
       setTotal(totalAmount);

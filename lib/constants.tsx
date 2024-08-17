@@ -1,4 +1,5 @@
 import {
+  ArrowDownUp,
   Boxes,
   Brush,
   Goal,
@@ -47,6 +48,11 @@ export const navLinks = [
     url: "/polish",
     icon: <Brush />,
     label: "Polish",
+  },
+  {
+    url: "/office",
+    icon: <ArrowDownUp />,
+    label: "Office",
   },
   {
     url: "/color",

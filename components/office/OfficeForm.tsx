@@ -26,34 +26,44 @@ const formSchema = z.object({
   products: z.array(
     z.object({
       product: z.string().min(2),
-      totalWeight: z.preprocess((val) => Number(val), z.number().positive()),
-      partialWeight: z.preprocess((val) => Number(val), z.number().positive()),
-      gross: z.number().positive().optional(),
-      pieces: z.number().positive().optional(),
+      vendor: z.string().min(2),
+      sheetType: z.string().min(2),
+      sheetCount: z.preprocess((val) => Number(val), z.number().positive()),
+      rate: z.preprocess((val) => Number(val), z.number().positive()),
     })
   ),
 });
 
-interface ColorFormProps {
+interface OfficeFormProps {
   initialData?: materialType | null; // Must have "?" to make it optional
 }
 
-const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
+const OfficeForm: React.FC<OfficeFormProps> = ({ initialData }) => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [productsList, setProductsList] = useState<ProductType[]>([]);
+  const [vendors, setVendors] = useState<VendorType[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productsRes] = await Promise.all([fetch("/api/products")]);
+        const [productsRes, vendorsRes] = await Promise.all([
+          fetch("/api/products"),
+          fetch("/api/vendors"),
+        ]);
 
         const productsData = await productsRes.json();
+        const vendorsData = await vendorsRes.json();
+
+        const filteredVendors = vendorsData.filter(
+          (vendor: VendorType) => vendor.type === "Work From Office"
+        );
 
         setProductsList(productsData);
+        setVendors(filteredVendors);
       } catch (err) {
         console.log("[fetchData]", err);
-        toast.error("Failed to load products");
+        toast.error("Failed to load products or vendors");
       }
     };
 
@@ -69,8 +79,10 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
           products: [
             {
               product: "",
-              totalWeight: 0,
-              partialWeight: 0,
+              vendor: "",
+              sheetType: "",
+              sheetCount: 0,
+              rate: 0,
             },
           ],
         },
@@ -91,20 +103,13 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
     }
   };
 
-  const calculateGrossAndPieces = (
-    totalWeight: number,
-    partialWeight: number
-  ) => {
-    const gross = Math.round(totalWeight / (partialWeight / 1000)); // Convert grams to kg
-    const pieces = gross * 144; // Assuming 144 pieces per gross
-    return { gross, pieces };
-  };
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setLoading(true);
 
-      const url = initialData ? `/api/color/${initialData._id}` : "/api/color";
+      const url = initialData
+        ? `/api/office/${initialData._id}`
+        : "/api/office";
       const res = await fetch(url, {
         method: initialData ? "PUT" : "POST",
         body: JSON.stringify(values),
@@ -115,14 +120,14 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
 
       if (res.ok) {
         setLoading(false);
-        toast.success(`Color Entry ${initialData ? "Updated" : "Created"}`);
-        router.push("/color");
+        toast.success(`Office ${initialData ? "Updated" : "Created"}`);
+        router.push("/office");
       } else {
         console.log(res);
-        toast.error("Failed to create/update Color Entry");
+        toast.error("Failed to create/update Office Entry");
       }
     } catch (err) {
-      console.log("[color_POST]", err);
+      console.log("[office_POST]", err);
       toast.error("Something went wrong! Please try again.");
     }
   };
@@ -133,11 +138,11 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
     <div className="p-10">
       {initialData ? (
         <div className="flex items-center justify-between">
-          <p className="text-heading2-bold">Edit Color Entry</p>
-          <Delete id={initialData._id} item="raw material" />
+          <p className="text-heading2-bold">Edit Office Work Entry</p>
+          <Delete id={initialData._id} item="office" />
         </div>
       ) : (
-        <p className="text-heading2-bold">Add Color Entry</p>
+        <p className="text-heading2-bold">Add Office Work Entry</p>
       )}
       <Separator className="bg-grey-1 mt-4 mb-7" />
       <Form {...form}>
@@ -159,7 +164,7 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
           {fields.map((item, index) => (
             <div
               key={item.id}
-              className="grid lg:grid-cols-6 md:grid-cols-3 sm:grid-cols-2 gap-2 items-center"
+              className="grid lg:grid-cols-8 md:grid-cols-4 sm:grid-cols-2 gap-2 items-center"
             >
               <FormField
                 control={form.control}
@@ -188,31 +193,23 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
 
               <FormField
                 control={form.control}
-                name={`products.${index}.totalWeight`}
+                name={`products.${index}.vendor`}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Total Weight (kg)</FormLabel>
+                    <FormLabel>Vendor</FormLabel>
+                    <br />
                     <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Total Weight"
+                      <select
                         {...field}
-                        onKeyDown={handleKeyPress}
-                        className="w-28"
-                        onChange={(e) => {
-                          field.onChange(e);
-                          const totalWeight = Number(e.target.value);
-                          const partialWeight = form.getValues(
-                            `products.${index}.partialWeight`
-                          );
-                          const { gross, pieces } = calculateGrossAndPieces(
-                            totalWeight,
-                            partialWeight
-                          );
-                          form.setValue(`products.${index}.gross`, gross);
-                          form.setValue(`products.${index}.pieces`, pieces);
-                        }}
-                      />
+                        className="border-gray border-2 w-32 h-10 rounded-lg"
+                      >
+                        <option value="">Select a vendor</option>
+                        {vendors.map((vendor) => (
+                          <option key={vendor._id} value={vendor.name}>
+                            {vendor.name}
+                          </option>
+                        ))}
+                      </select>
                     </FormControl>
                     <FormMessage className="text-red-1" />
                   </FormItem>
@@ -221,31 +218,43 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
 
               <FormField
                 control={form.control}
-                name={`products.${index}.partialWeight`}
+                name={`products.${index}.sheetType`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sheet Type</FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="border-gray border-2 w-32 h-10 rounded-lg"
+                      >
+                        <option value="">Select Sheet Type</option>
+                        <option value="1C">1C</option>
+                        <option value="2C">2C</option>
+                        <option value="Blue">Blue</option>
+                      </select>
+                    </FormControl>
+                    <FormMessage className="text-red-1" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name={`products.${index}.sheetCount`}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="whitespace-nowrap">
-                      Partial Weight (g)
+                      Sheet Count
                     </FormLabel>
                     <FormControl>
                       <Input
                         type="number"
-                        placeholder="Partial Weight"
+                        placeholder="Sheet Count"
                         className="w-28"
                         {...field}
                         onKeyDown={handleKeyPress}
                         onChange={(e) => {
                           field.onChange(e);
-                          const partialWeight = Number(e.target.value);
-                          const totalWeight = form.getValues(
-                            `products.${index}.totalWeight`
-                          );
-                          const { gross, pieces } = calculateGrossAndPieces(
-                            totalWeight,
-                            partialWeight
-                          );
-                          form.setValue(`products.${index}.gross`, gross);
-                          form.setValue(`products.${index}.pieces`, pieces);
                         }}
                       />
                     </FormControl>
@@ -256,39 +265,17 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
 
               <FormField
                 control={form.control}
-                name={`products.${index}.gross`}
+                name={`products.${index}.rate`}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Gross</FormLabel>
+                    <FormLabel>Rate/Sheet</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
-                        placeholder="Gross"
+                        placeholder="Rate"
                         className="w-28"
                         {...field}
                         onKeyDown={handleKeyPress}
-                        disabled
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-1" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name={`products.${index}.pieces`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pieces</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Pieces"
-                        className="w-28"
-                        {...field}
-                        onKeyDown={handleKeyPress}
-                        disabled
                       />
                     </FormControl>
                     <FormMessage className="text-red-1" />
@@ -311,8 +298,10 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
             onClick={() =>
               append({
                 product: "",
-                totalWeight: 0,
-                partialWeight: 0,
+                vendor: "",
+                sheetType: "",
+                sheetCount: 0,
+                rate: 0,
               })
             }
             className="bg-blue-1 text-white"
@@ -328,7 +317,7 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
             </Button>
             <Button
               type="button"
-              onClick={() => router.push("/color")}
+              onClick={() => router.push("/office")}
               className="bg-blue-1 text-white"
             >
               Discard
@@ -340,4 +329,4 @@ const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
   );
 };
 
-export default ColorForm;
+export default OfficeForm;

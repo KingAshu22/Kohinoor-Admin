@@ -5,6 +5,7 @@ import RawMaterial from "@/lib/models/RawMaterial";
 import Polish from "@/lib/models/Polish";
 import Packaging from "@/lib/models/Packaging";
 import Color from "@/lib/models/Color";
+import Office from "@/lib/models/Office";
 
 export const GET = async (
     req: NextRequest,
@@ -55,7 +56,7 @@ export const GET = async (
                 });
                 break;
             case "Work From Office":
-                results = await Color.find({
+                results = await Office.find({
                     date: { $gte: startDate, $lte: endDate },
                     "products.vendor": vendor.name,
                 });
