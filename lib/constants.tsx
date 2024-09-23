@@ -37,7 +37,7 @@ export const navLinks = [
   {
     url: "/vendors",
     icon: <User />,
-    label: "Vendors",
+    label: "Users",
   },
   {
     url: "/raw-material",

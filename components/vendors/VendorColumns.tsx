@@ -45,6 +45,11 @@ export const columns: ColumnDef<VendorType>[] = [
     cell: ({ row }) => (
       <>
         <Delete item="vendors" id={row.original._id} />
+        <Link href={`/vendors/entry/${row.original._id}`} passHref>
+          <Button className="bg-yellow-600 text-white ml-4 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+            Entry
+          </Button>
+        </Link>
         <Link href={`/vendors/salary/${row.original._id}`} passHref>
           <Button className="bg-green-600 text-white ml-4 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
             Salary

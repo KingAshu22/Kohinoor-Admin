@@ -73,7 +73,7 @@ const VendorForm: React.FC<VendorFormProps> = ({ initialData }) => {
 
       if (res.ok) {
         setLoading(false);
-        toast.success(`Vendor ${initialData ? "Updated" : "Created"}`);
+        toast.success(`User ${initialData ? "Updated" : "Created"}`);
         router.push("/vendors");
       } else {
         console.log(res);
@@ -91,11 +91,11 @@ const VendorForm: React.FC<VendorFormProps> = ({ initialData }) => {
     <div className="p-10">
       {initialData ? (
         <div className="flex items-center justify-between">
-          <p className="text-heading2-bold">Edit Vendor</p>
+          <p className="text-heading2-bold">Edit Users</p>
           <Delete id={initialData._id} item="vendor" />
         </div>
       ) : (
-        <p className="text-heading2-bold">Create Vendor</p>
+        <p className="text-heading2-bold">Create Users</p>
       )}
       <Separator className="bg-grey-1 mt-4 mb-7" />
       <Form {...form}>

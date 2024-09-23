@@ -37,6 +37,8 @@ const Delete: React.FC<DeleteProps> = ({ item, id }) => {
         setLoading(false);
         if (itemType === "raw-materials") {
           window.location.href = `/raw-material`;
+        } else if (itemType === "packagings") {
+          window.location.href = "/packaging";
         } else {
           window.location.href = `/${itemType}`;
         }

@@ -134,6 +134,6 @@ export const columns: ColumnDef<materialType>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <Delete item="box" id={row.original._id} />,
+    cell: ({ row }) => <Delete item="packagings" id={row.original._id} />,
   },
 ];
