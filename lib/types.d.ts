@@ -33,15 +33,15 @@ type VendorType = {
 type materialType = {
   _id: string;
   date: string;
-  products: {
-    product: string;
-    totalWeight: number;
+  product: string;
+  vendor: string;
+  isCompleted: boolean;
+  packaging: {
+    weight: number;
     partialWeight: number;
-    vendor: string;
-    rate: number;
     gross: number;
     pieces: number;
-  }[];
+  };
 }
 
 

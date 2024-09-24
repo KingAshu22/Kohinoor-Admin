@@ -10,7 +10,7 @@ export const GET = async (
         await connectToDB();
 
         const packagingEntries = await Packaging.find({
-            'products.vendor': params.vendorName,
+            'vendor': params.vendorName,
         });
 
         if (!packagingEntries.length) {

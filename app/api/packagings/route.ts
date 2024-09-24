@@ -6,31 +6,29 @@ export const POST = async (req: NextRequest) => {
     try {
         await connectToDB();
 
-        const { date, products } = await req.json();
+        const { date, product, totalWeight, partialWeight, vendor, rate, gross, pieces } = await req.json();
 
-        if (!date || !products || !products.length) {
+        if (!date || !product || !totalWeight || !partialWeight || !vendor || !rate || !gross || !pieces) {
             return new NextResponse("Not enough data to create a Packaging Entry", {
                 status: 400,
             });
         }
 
-        const invalidProduct = products.some((product: any) =>
-            !product.product ||
-            !product.totalWeight ||
-            !product.partialWeight ||
-            !product.vendor ||
-            !product.rate ||
-            !product.gross ||
-            !product.pieces
-        );
-
-        if (invalidProduct) {
-            return new NextResponse("Incomplete product data", {
-                status: 400,
-            });
-        }
-
-        const newPackaging = await Packaging.create({ date, products });
+        const newPackaging = await Packaging.create({
+            date,
+            vendor,
+            product,
+            rate,
+            remainingWeight: 0,
+            isCompleted: false,
+            isVerified: false,
+            packaging: {
+                weight: totalWeight,
+                partialWeight,
+                gross,
+                pieces,
+            }
+        });
 
         await newPackaging.save();
 

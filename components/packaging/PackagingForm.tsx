@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -23,20 +23,13 @@ import Loader from "../custom ui/Loader";
 
 const formSchema = z.object({
   date: z.string().min(2),
-  products: z.array(
-    z.object({
-      product: z.string().min(2),
-      totalWeight: z.preprocess((val) => Number(val), z.number().positive()),
-      partialWeight: z.preprocess((val) => Number(val), z.number().positive()), // Partial Weight in grams
-      vendor: z.string().min(2),
-      rate: z.preprocess(
-        (val) => Number(val),
-        z.number().positive().optional()
-      ),
-      gross: z.number().positive().optional(),
-      pieces: z.number().positive().optional(),
-    })
-  ),
+  product: z.string().min(2),
+  totalWeight: z.preprocess((val) => Number(val), z.number().positive()),
+  partialWeight: z.preprocess((val) => Number(val), z.number().positive()), // Partial Weight in grams
+  vendor: z.string().min(2),
+  rate: z.preprocess((val) => Number(val), z.number().positive().optional()),
+  gross: z.number().positive().optional(),
+  pieces: z.number().positive().optional(),
 });
 
 interface PackagingFormProps {
@@ -81,21 +74,12 @@ const PackagingForm: React.FC<PackagingFormProps> = ({ initialData }) => {
       ? { ...initialData }
       : {
           date: new Date().toISOString().split("T")[0], // Pre-fill with today's date
-          products: [
-            {
-              product: "",
-              totalWeight: 0,
-              partialWeight: 0,
-              vendor: "",
-              rate: 0,
-            },
-          ],
+          product: "",
+          totalWeight: 0,
+          partialWeight: 0,
+          vendor: "",
+          rate: 4,
         },
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "products",
   });
 
   const handleKeyPress = (
@@ -149,7 +133,7 @@ const PackagingForm: React.FC<PackagingFormProps> = ({ initialData }) => {
   return loading ? (
     <Loader />
   ) : (
-    <div className="p-10">
+    <div className="bg-white rounded-md shadow p-10">
       {initialData ? (
         <div className="flex items-center justify-between">
           <p className="text-heading2-bold">Edit Packaging Entry</p>
@@ -161,243 +145,197 @@ const PackagingForm: React.FC<PackagingFormProps> = ({ initialData }) => {
       <Separator className="bg-grey-1 mt-4 mb-7" />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} onKeyDown={handleKeyPress} />
-                </FormControl>
-                <FormMessage className="text-red-1" />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-8">
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      {...field}
+                      onKeyDown={handleKeyPress}
+                      className="border-gray-200 border-2 p-2 rounded-lg w-full"
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-1" />
+                </FormItem>
+              )}
+            />
 
-          {fields.map((item, index) => (
-            <div
-              key={item.id}
-              className="grid lg:grid-cols-8 md:grid-cols-4 sm:grid-cols-2 gap-2 items-center"
-            >
-              <FormField
-                control={form.control}
-                name={`products.${index}.product`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Product</FormLabel>
-                    <br />
-                    <FormControl>
-                      <select
-                        {...field}
-                        className="border-gray border-2 w-32 h-10 rounded-lg"
-                      >
-                        <option value="">Select a product</option>
-                        {productsList.map((product) => (
-                          <option key={product._id} value={product.title}>
-                            {product.title}
-                          </option>
-                        ))}
-                      </select>
-                    </FormControl>
-                    <FormMessage className="text-red-1" />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="product"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Product</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="border-gray-200 border-2 p-2 rounded-lg w-full"
+                    >
+                      <option value="">Select a product</option>
+                      {productsList.map((product) => (
+                        <option key={product._id} value={product.title}>
+                          {product.title}
+                        </option>
+                      ))}
+                    </select>
+                  </FormControl>
+                  <FormMessage className="text-red-1" />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name={`products.${index}.vendor`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Vendor</FormLabel>
-                    <br />
-                    <FormControl>
-                      <select
-                        {...field}
-                        className="border-gray border-2 w-32 h-10 rounded-lg"
-                      >
-                        <option value="">Select a vendor</option>
-                        {vendors.map((vendor) => (
-                          <option key={vendor._id} value={vendor.name}>
-                            {vendor.name}
-                          </option>
-                        ))}
-                      </select>
-                    </FormControl>
-                    <FormMessage className="text-red-1" />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="vendor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Vendor</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="border-gray-200 border-2 p-2 rounded-lg w-full"
+                    >
+                      <option value="">Select a vendor</option>
+                      {vendors.map((vendor) => (
+                        <option key={vendor._id} value={vendor.name}>
+                          {vendor.name}
+                        </option>
+                      ))}
+                    </select>
+                  </FormControl>
+                  <FormMessage className="text-red-1" />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name={`products.${index}.totalWeight`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Total Weight (kg)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Total Weight"
-                        {...field}
-                        onKeyDown={handleKeyPress}
-                        className="w-28"
-                        onChange={(e) => {
-                          field.onChange(e);
-                          const totalWeight = Number(e.target.value);
-                          const partialWeight = form.getValues(
-                            `products.${index}.partialWeight`
-                          );
-                          const { gross, pieces } = calculateGrossAndPieces(
-                            totalWeight,
-                            partialWeight
-                          );
-                          form.setValue(`products.${index}.gross`, gross);
-                          form.setValue(`products.${index}.pieces`, pieces);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-1" />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="totalWeight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Total Wt (kg)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Total Weight"
+                      {...field}
+                      onKeyDown={handleKeyPress}
+                      className="border-gray-200 border-2 p-2 rounded-lg w-full"
+                      onChange={(e) => {
+                        field.onChange(e);
+                        const totalWeight = Number(e.target.value);
+                        const partialWeight = form.getValues("partialWeight");
+                        const { gross, pieces } = calculateGrossAndPieces(
+                          totalWeight,
+                          partialWeight
+                        );
+                        form.setValue("gross", gross);
+                        form.setValue("pieces", pieces);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-1" />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name={`products.${index}.partialWeight`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="whitespace-nowrap">
-                      Partial Weight (g)
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Partial Weight"
-                        className="w-28"
-                        {...field}
-                        onKeyDown={handleKeyPress}
-                        onChange={(e) => {
-                          field.onChange(e);
-                          const partialWeight = Number(e.target.value);
-                          const totalWeight = form.getValues(
-                            `products.${index}.totalWeight`
-                          );
-                          const { gross, pieces } = calculateGrossAndPieces(
-                            totalWeight,
-                            partialWeight
-                          );
-                          form.setValue(`products.${index}.gross`, gross);
-                          form.setValue(`products.${index}.pieces`, pieces);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-1" />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="partialWeight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Partial Wt (g)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Partial Weight"
+                      className="border-gray-200 border-2 p-2 rounded-lg w-full"
+                      {...field}
+                      onKeyDown={handleKeyPress}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        const partialWeight = Number(e.target.value);
+                        const totalWeight = form.getValues("totalWeight");
+                        const { gross, pieces } = calculateGrossAndPieces(
+                          totalWeight,
+                          partialWeight
+                        );
+                        form.setValue("gross", gross);
+                        form.setValue("pieces", pieces);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-1" />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name={`products.${index}.rate`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rate/Gross</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Rate/Gross"
-                        className="w-28"
-                        {...field}
-                        onKeyDown={handleKeyPress}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-1" />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="rate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Rate/Gross</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Rate/Gross"
+                      className="border-gray-200 border-2 p-2 rounded-lg w-full"
+                      {...field}
+                      onKeyDown={handleKeyPress}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-1" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="gross"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Gross</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Gross"
+                      className="w-28"
+                      {...field}
+                      onKeyDown={handleKeyPress}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-1" />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name={`products.${index}.gross`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Gross</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Gross"
-                        className="w-28"
-                        {...field}
-                        onKeyDown={handleKeyPress}
-                        disabled
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-1" />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="pieces"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Pieces</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Pieces"
+                      className="w-28"
+                      {...field}
+                      onKeyDown={handleKeyPress}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-1" />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name={`products.${index}.pieces`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pieces</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Pieces"
-                        className="w-28"
-                        {...field}
-                        onKeyDown={handleKeyPress}
-                        disabled
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-1" />
-                  </FormItem>
-                )}
-              />
-
-              <Button
-                type="button"
-                onClick={() => remove(index)}
-                className="bg-red-500 text-white mt-8 w-2"
-              >
-                X
-              </Button>
-            </div>
-          ))}
-
-          <Button
-            type="button"
-            onClick={() =>
-              append({
-                product: "",
-                totalWeight: 0,
-                partialWeight: 0,
-                vendor: "",
-                rate: 0,
-              })
-            }
-            className="bg-blue-1 text-white"
-          >
-            Add Product
-          </Button>
-
-          <Separator className="bg-grey-1 mt-4 mb-7" />
-
-          <div className="flex gap-10">
             <Button type="submit" className="bg-blue-1 text-white">
-              Submit
-            </Button>
-            <Button
-              type="button"
-              onClick={() => router.push("/packaging")}
-              className="bg-blue-1 text-white"
-            >
-              Discard
+              {initialData ? "Update" : "Submit"}
             </Button>
           </div>
         </form>

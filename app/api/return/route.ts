@@ -1,84 +1,80 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDB } from "@/lib/mongoDB";
-import Return from "@/lib/models/Return";
+import Packaging from "@/lib/models/Packaging";
 
 export const POST = async (req: NextRequest) => {
     try {
         await connectToDB();
+        const requestBody = await req.json();
+        console.log("Request Body:", requestBody);
 
-        const { date, products } = await req.json();
+        const {
+            date,
+            product,
+            weight,
+            remainingWeight,
+            vendor,
+            gross,
+            pieces,
+        } = requestBody;
 
-        if (!date || !products || !products.length) {
-            return new NextResponse("Not enough data to create a Return entry", {
-                status: 400,
+        // if (!date || !product || !weight || !remainingWeight || !vendor || !gross || !pieces) {
+        //     console.log("All data not present");
+        //     return new NextResponse("Not enough data to create a Return entry", {
+        //         status: 400,
+        //     });
+        // } else {
+        //     console.log("All data present");
+
+        // }
+
+        // Check if the packaging exists for the vendor and product where isCompleted is false
+        const existingPackaging = await Packaging.findOne({
+            product,
+            vendor,
+            isCompleted: false,
+        });
+
+        console.log("Packaging", existingPackaging);
+
+
+        if (!existingPackaging) {
+            return new NextResponse("No packaging found for the specified vendor and product.", {
+                status: 404,
             });
+        } else {
+            console.log("Package Exists")
         }
 
-        const invalidProduct = products.some((product: any) =>
-            !product.product ||
-            !product.weight ||
-            !product.remainingWeight ||
-            !product.vendor ||
-            !product.rate ||
-            !product.gross ||
-            !product.pieces
-        );
+        // Prepare the return object to be pushed into the return array
+        const returnEntry = {
+            date: date,
+            weight: Number(weight),
+            gross: Number(gross),
+            pieces: Number(pieces),
+        };
 
-        if (invalidProduct) {
-            return new NextResponse("Incomplete product data", {
-                status: 400,
-            });
-        }
+        console.log(returnEntry);
 
-        // Prepare the products with the correct types and isCompleted flag
-        const updatedProducts = products.map((product: any) => ({
-            product: product.product,
-            vendor: product.vendor,
-            rate: Number(product.rate),
-            gross: Number(product.gross),
-            pieces: Number(product.pieces),
-            weight: Number(product.weight),
-            remainingWeight: Number(product.remainingWeight),
-            isCompleted: Number(product.remainingWeight) === 0, // true if remainingWeight is 0
-        }));
+        // Add the new return entry to the return array
+        existingPackaging.return.push(returnEntry);
 
-        for (const product of updatedProducts) {
-            // Check if the return already exists for the same vendor and product
-            const existingReturn = await Return.findOne({
-                "products.product": product.product,
-                "products.vendor": product.vendor,
-            });
+        console.log("Return Entry Pushed");
 
-            if (existingReturn) {
-                // Find the specific product entry in the existing return
-                const existingProduct = existingReturn.products.find((p: any) =>
-                    p.product === product.product && p.vendor === product.vendor
-                );
+        // Update the remaining weight
+        existingPackaging.remainingWeight = remainingWeight;
 
-                if (existingProduct) {
-                    // Accumulate the values for weight, gross, and pieces
-                    existingProduct.weight += product.weight;
-                    existingProduct.gross += product.gross;
-                    existingProduct.pieces += product.pieces;
+        console.log("Remaining Weight Added");
 
-                    // Keep the remainingWeight as the latest value (don't accumulate)
-                    existingProduct.remainingWeight = product.remainingWeight;
+        // Update the isCompleted flag based on the latest remainingWeight
+        existingPackaging.isCompleted = remainingWeight === 0;
 
-                    // Update the isCompleted flag based on the latest remainingWeight
-                    existingProduct.isCompleted = product.remainingWeight === 0;
-                }
+        console.log("isCompleted updated");
 
-                // Save the updated entry
-                await existingReturn.save();
-            } else {
-                // Create a new return entry if none exists for this vendor and product
-                const newReturn = new Return({
-                    date,
-                    products: [product],
-                });
-                await newReturn.save();
-            }
-        }
+        // Save the updated entry
+        await existingPackaging.save();
+
+        console.log("Packaging Updated");
 
         return new NextResponse("Return entry processed successfully", { status: 200 });
     } catch (err) {
@@ -90,9 +86,7 @@ export const POST = async (req: NextRequest) => {
 export const GET = async (req: NextRequest) => {
     try {
         await connectToDB();
-
-        const returnData = await Return.find();
-
+        const returnData = await Packaging.find();
         return new NextResponse(JSON.stringify(returnData), { status: 200 });
     } catch (err) {
         console.error("[return_GET]", err);
