@@ -52,6 +52,7 @@ export const POST = async (req: NextRequest) => {
             weight: Number(weight),
             gross: Number(gross),
             pieces: Number(pieces),
+            isVerified: false
         };
 
         console.log(returnEntry);

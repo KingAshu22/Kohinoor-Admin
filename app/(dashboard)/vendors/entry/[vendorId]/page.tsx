@@ -1,6 +1,8 @@
 "use client";
 
 import Loader from "@/components/custom ui/Loader";
+import { Pencil, Trash } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -18,10 +20,12 @@ type PackagingProductType = {
     pieces: number;
   };
   return: {
+    _id: string;
     date: string;
     weight: number;
     gross: number;
     pieces: number;
+    isVerified: boolean;
   }[];
 };
 
@@ -228,6 +232,9 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                         <th className="border px-4 py-2 text-left">Weight</th>
                         <th className="border px-4 py-2 text-left">Gross</th>
                         <th className="border px-4 py-2 text-left">Pieces</th>
+                        <th className="border px-4 py-2 text-left">Verified</th>
+                        <th className="border px-4 py-2 text-left">Edit</th>
+                        <th className="border px-4 py-2 text-left">Delete</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -244,9 +251,44 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                             <td className="border px-4 py-2">
                               {entry.product}
                             </td>
-                            <td className="border px-4 py-2">{ret.weight}</td>
-                            <td className="border px-4 py-2">{ret.gross}</td>
-                            <td className="border px-4 py-2">{ret.pieces}</td>
+                            <td className="border px-4 py-2">
+                              <input
+                                type="number"
+                                className="w-12"
+                                value={ret.weight}
+                              />
+                            </td>
+                            <td className="border px-4 py-2">
+                              <input
+                                type="number"
+                                className="w-12"
+                                value={ret.gross}
+                              />
+                            </td>
+                            <td className="border px-4 py-2">
+                              <input
+                                type="number"
+                                className="w-12"
+                                value={ret.pieces}
+                              />
+                            </td>
+                            <td
+                              className={`border px-4 py-2 ${
+                                ret.isVerified
+                                  ? "text-green-500"
+                                  : "text-red-500"
+                              }`}
+                            >
+                              {ret.isVerified ? "Verified" : "Unverified"}
+                            </td>
+                            <td className="border px-4 py-2">
+                              <Link href={`/${ret._id}`}>
+                                <Pencil />
+                              </Link>
+                            </td>
+                            <td className="border px-4 py-2">
+                              <Trash />
+                            </td>
                           </tr>
                         ))
                       )}

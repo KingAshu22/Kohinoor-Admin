@@ -7,7 +7,6 @@ const PackagingSchema = new mongoose.Schema({
     rate: Number,
     remainingWeight: Number,
     isCompleted: Boolean,
-    isVerified: Boolean,
     packaging: {
         weight: Number,
         partialWeight: Number,
@@ -19,13 +18,8 @@ const PackagingSchema = new mongoose.Schema({
         weight: Number,
         gross: Number,
         pieces: Number,
+        isVerified: Boolean,
     }],
-    boxing: {
-        date: String,
-        weight: Number,
-        boxCount: Number,
-        quantity: String,
-    },
 }, { toJSON: { getters: true } });
 
 const Packaging = mongoose.models.Packaging || mongoose.model("Packaging", PackagingSchema);

@@ -21,7 +21,6 @@ export const POST = async (req: NextRequest) => {
             rate,
             remainingWeight: totalWeight,
             isCompleted: false,
-            isVerified: false,
             packaging: {
                 weight: totalWeight,
                 partialWeight,
