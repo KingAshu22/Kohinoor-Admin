@@ -19,7 +19,7 @@ export const POST = async (req: NextRequest) => {
             vendor,
             product,
             rate,
-            remainingWeight: 0,
+            remainingWeight: totalWeight,
             isCompleted: false,
             isVerified: false,
             packaging: {

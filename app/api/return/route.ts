@@ -86,7 +86,21 @@ export const POST = async (req: NextRequest) => {
 export const GET = async (req: NextRequest) => {
     try {
         await connectToDB();
-        const returnData = await Packaging.find();
+
+        // Extract the vendorName from the query parameters
+        const { searchParams } = new URL(req.url);
+        const vendorName = searchParams.get("vendorName");
+
+        let returnData;
+
+        if (vendorName) {
+            // If vendorName is present, filter based on the vendor name
+            returnData = await Packaging.find({ vendor: vendorName });
+        } else {
+            // If vendorName is not present, return all data
+            returnData = await Packaging.find();
+        }
+
         return new NextResponse(JSON.stringify(returnData), { status: 200 });
     } catch (err) {
         console.error("[return_GET]", err);

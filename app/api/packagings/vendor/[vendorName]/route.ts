@@ -11,11 +11,12 @@ export const GET = async (
 
         const packagingEntries = await Packaging.find({
             'vendor': params.vendorName,
+            'isCompleted': false,
         });
 
         if (!packagingEntries.length) {
-            return new NextResponse(
-                JSON.stringify({ message: "No packaging data found for this vendor" }),
+            return NextResponse.json(
+                packagingEntries,
                 { status: 404 }
             );
         }
