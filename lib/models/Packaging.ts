@@ -16,8 +16,8 @@ const PackagingSchema = new mongoose.Schema({
     return: [{
         date: String,
         weight: Number,
+        packets: Number,
         gross: Number,
-        pieces: Number,
         isVerified: Boolean,
     }],
 }, { toJSON: { getters: true } });

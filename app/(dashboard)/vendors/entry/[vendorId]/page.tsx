@@ -23,8 +23,8 @@ type PackagingProductType = {
     _id: string;
     date: string;
     weight: number;
+    packets: number;
     gross: number;
-    pieces: number;
     isVerified: boolean;
   }[];
 };
@@ -34,7 +34,9 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
   const [vendorName, setVendorName] = useState<string>("");
   const [selectedProduct, setSelectedProduct] = useState<string | undefined>();
   const [weight, setWeight] = useState<number | undefined>();
-  const [remainingWeight, setRemainingWeight] = useState<number | undefined>(0);
+  const [packets, setPackets] = useState<number | undefined>();
+  const [gross, setGross] = useState<number | undefined>();
+  const [remainingWeight, setRemainingWeight] = useState<number | undefined>();
   const [packagingProducts, setPackagingProducts] = useState<
     PackagingProductType[]
   >([]);
@@ -109,11 +111,25 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
     }
   };
 
+  const handlePacketChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputPacket = Number(e.target.value);
+    setPackets(inputPacket);
+
+    setGross(Number((inputPacket / 12).toFixed(1)))
+  };
+
   const handleRemainingWeightChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const inputRemainingWeight = Number(e.target.value);
     setRemainingWeight(inputRemainingWeight);
+  };
+
+  const handleGrossChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const gross = Number(e.target.value);
+    setGross(gross);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -124,9 +140,9 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
       product: formData.get("product") as string,
       vendor: vendorName,
       weight: Number(formData.get("weight")),
+      packets: Number(formData.get("packets")),
       remainingWeight: remainingWeight, // Use the manually edited remaining weight
-      gross: Number(formData.get("gross")),
-      pieces: Number(formData.get("pieces")),
+      gross: gross,
     };
 
     try {
@@ -140,6 +156,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
       setSelectedProduct(undefined);
       setWeight(undefined);
       setRemainingWeight(0);
+      setGross(0);
     } catch (err) {
       console.error("[return_POST]", err);
     }
@@ -231,7 +248,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                         <th className="border px-4 py-2 text-left">Product</th>
                         <th className="border px-4 py-2 text-left">Weight</th>
                         <th className="border px-4 py-2 text-left">Gross</th>
-                        <th className="border px-4 py-2 text-left">Pieces</th>
+                        <th className="border px-4 py-2 text-left">Packets</th>
                         <th className="border px-4 py-2 text-left">Verified</th>
                         <th className="border px-4 py-2 text-left">Edit</th>
                         <th className="border px-4 py-2 text-left">Delete</th>
@@ -269,15 +286,14 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                               <input
                                 type="number"
                                 className="w-12"
-                                value={ret.pieces}
+                                value={ret.packets}
                               />
                             </td>
                             <td
-                              className={`border px-4 py-2 ${
-                                ret.isVerified
-                                  ? "text-green-500"
-                                  : "text-red-500"
-                              }`}
+                              className={`border px-4 py-2 ${ret.isVerified
+                                ? "text-green-500"
+                                : "text-red-500"
+                                }`}
                             >
                               {ret.isVerified ? "Verified" : "Unverified"}
                             </td>
@@ -339,6 +355,20 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                   />
                 </div>
                 <div className="flex flex-col">
+                  <label htmlFor="weight" className="mb-1 font-medium">
+                    Packets
+                  </label>
+                  <input
+                    type="number"
+                    name="packets"
+                    id="packets"
+                    required
+                    value={packets || ""}
+                    onChange={handlePacketChange}
+                    className="p-2 border border-gray-300 rounded"
+                  />
+                </div>
+                <div className="flex flex-col">
                   <label htmlFor="remainingWeight" className="mb-1 font-medium">
                     Remaining Weight
                   </label>
@@ -347,7 +377,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                     name="remainingWeight"
                     id="remainingWeight"
                     required
-                    value={remainingWeight || ""}
+                    value={remainingWeight !== undefined ? remainingWeight : ""}
                     onChange={handleRemainingWeightChange}
                     className="p-2 border border-gray-300 rounded"
                   />
@@ -360,19 +390,9 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                     type="number"
                     name="gross"
                     id="gross"
+                    value={gross !== undefined ? gross : ""}
                     required
-                    className="p-2 border border-gray-300 rounded"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label htmlFor="pieces" className="mb-1 font-medium">
-                    Pieces
-                  </label>
-                  <input
-                    type="number"
-                    name="pieces"
-                    id="pieces"
-                    required
+                    onChange={handleGrossChange}
                     className="p-2 border border-gray-300 rounded"
                   />
                 </div>

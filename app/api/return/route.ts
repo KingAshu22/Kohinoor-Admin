@@ -11,14 +11,14 @@ export const POST = async (req: NextRequest) => {
         const {
             date,
             product,
-            weight,
-            remainingWeight,
             vendor,
+            weight,
+            packets,
+            remainingWeight,
             gross,
-            pieces,
         } = requestBody;
 
-        // if (!date || !product || !weight || !remainingWeight || !vendor || !gross || !pieces) {
+        // if (!date || !product || !vendor || !weight || !packets || !remainingWeight || !gross) {
         //     console.log("All data not present");
         //     return new NextResponse("Not enough data to create a Return entry", {
         //         status: 400,
@@ -50,8 +50,8 @@ export const POST = async (req: NextRequest) => {
         const returnEntry = {
             date: date,
             weight: Number(weight),
+            packets: Number(packets),
             gross: Number(gross),
-            pieces: Number(pieces),
             isVerified: false
         };
 
