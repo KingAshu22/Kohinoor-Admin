@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDB } from "@/lib/mongoDB";
 import Packaging from "@/lib/models/Packaging";
 
+interface ReturnObject {
+    _id: string;
+    date: string;
+    weight: number;
+    packets: number;
+    gross: number;
+    isVerified: boolean;
+}
+
+// POST Method - Create a new return entry
 export const POST = async (req: NextRequest) => {
     try {
         await connectToDB();
@@ -18,64 +28,37 @@ export const POST = async (req: NextRequest) => {
             gross,
         } = requestBody;
 
-        // if (!date || !product || !vendor || !weight || !packets || !remainingWeight || !gross) {
-        //     console.log("All data not present");
-        //     return new NextResponse("Not enough data to create a Return entry", {
-        //         status: 400,
-        //     });
-        // } else {
-        //     console.log("All data present");
-
-        // }
-
-        // Check if the packaging exists for the vendor and product where isCompleted is false
         const existingPackaging = await Packaging.findOne({
             product,
             vendor,
-            isCompleted: false,
         });
-
-        console.log("Packaging", existingPackaging);
-
 
         if (!existingPackaging) {
             return new NextResponse("No packaging found for the specified vendor and product.", {
                 status: 404,
             });
-        } else {
-            console.log("Package Exists")
         }
 
         // Prepare the return object to be pushed into the return array
         const returnEntry = {
-            date: date,
+            date,
             weight: Number(weight),
             packets: Number(packets),
             gross: Number(gross),
-            isVerified: false
+            isVerified: false,
         };
-
-        console.log(returnEntry);
 
         // Add the new return entry to the return array
         existingPackaging.return.push(returnEntry);
 
-        console.log("Return Entry Pushed");
-
         // Update the remaining weight
         existingPackaging.remainingWeight = remainingWeight;
-
-        console.log("Remaining Weight Added");
 
         // Update the isCompleted flag based on the latest remainingWeight
         existingPackaging.isCompleted = remainingWeight === 0;
 
-        console.log("isCompleted updated");
-
         // Save the updated entry
         await existingPackaging.save();
-
-        console.log("Packaging Updated");
 
         return new NextResponse("Return entry processed successfully", { status: 200 });
     } catch (err) {
@@ -84,27 +67,110 @@ export const POST = async (req: NextRequest) => {
     }
 };
 
+// GET Method - Fetch all or specific vendor return entries
 export const GET = async (req: NextRequest) => {
     try {
         await connectToDB();
-
-        // Extract the vendorName from the query parameters
         const { searchParams } = new URL(req.url);
         const vendorName = searchParams.get("vendorName");
 
         let returnData;
-
         if (vendorName) {
-            // If vendorName is present, filter based on the vendor name
             returnData = await Packaging.find({ vendor: vendorName });
         } else {
-            // If vendorName is not present, return all data
             returnData = await Packaging.find();
         }
 
         return new NextResponse(JSON.stringify(returnData), { status: 200 });
     } catch (err) {
         console.error("[return_GET]", err);
+        return new NextResponse("Internal Error", { status: 500 });
+    }
+};
+
+// PUT Method - Update a specific return entry
+export const PUT = async (req: NextRequest) => {
+    try {
+        await connectToDB();
+        const requestBody = await req.json();
+        const { packagingId, returnId, packets, gross, isVerified } = requestBody;
+
+        if (!packagingId || !returnId) {
+            return new NextResponse("Packaging ID and Return ID are required", {
+                status: 400,
+            });
+        }
+
+        // Find the packaging entry by packagingId
+        const packaging = await Packaging.findOne({ _id: packagingId });
+        if (!packaging) {
+            return new NextResponse("Packaging not found", { status: 404 });
+        }
+
+        // Find the specific return entry by returnId
+        const returnEntry = packaging.return.id(returnId);
+        if (!returnEntry) {
+            return new NextResponse("Return entry not found", { status: 404 });
+        }
+
+        // Update the fields for the return entry
+        returnEntry.packets = packets;
+        returnEntry.gross = gross;
+        returnEntry.isVerified = isVerified;
+
+        // Save the updated packaging document
+        await packaging.save();
+
+        return new NextResponse("Return entry successfully updated", {
+            status: 200,
+        });
+    } catch (err) {
+        console.error("[return_PUT]", err);
+        return new NextResponse("Internal Error", { status: 500 });
+    }
+};
+
+// DELETE Method - Delete a specific return entry and update remainingWeight
+export const DELETE = async (req: NextRequest) => {
+    try {
+        await connectToDB();
+
+        const { productId, returnId } = await req.json();
+
+        if (!productId || !returnId) {
+            return new NextResponse("Product ID and Return ID are required", {
+                status: 400,
+            });
+        }
+
+        const packaging = await Packaging.findOne({ _id: productId });
+        if (!packaging) {
+            return new NextResponse("Product not found", { status: 404 });
+        }
+
+        const updatedReturns = packaging.return.filter(
+            (ret: ReturnObject) => ret._id.toString() !== returnId
+        );
+
+        if (updatedReturns.length === packaging.return.length) {
+            return new NextResponse("Return entry not found", { status: 404 });
+        }
+
+        const totalReturnWeight = updatedReturns.reduce(
+            (total: number, ret: ReturnObject) => total + ret.weight,
+            0
+        );
+
+        packaging.remainingWeight = packaging.packaging.weight - totalReturnWeight;
+        packaging.return = updatedReturns;
+
+        await packaging.save();
+
+        return new NextResponse("Return entry successfully deleted and remainingWeight updated", {
+            status: 200,
+        });
+    } catch (err) {
+        console.error("[return_DELETE]", err);
         return new NextResponse("Internal Error", { status: 500 });
     }
 };

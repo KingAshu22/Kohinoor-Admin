@@ -21,28 +21,65 @@ type ProductData = {
 type Document = {
   date: string;
   products: ProductData[];
+  return?: {
+    weight?: number;
+    gross?: number;
+    packets?: number;
+    isVerified?: boolean;
+  }[];
 };
 
-// Utility function to sum gross for a given product across multiple documents
-const sumGrossForProduct = (documents: Document[], product: string): number => {
-  return documents.reduce((total: number, doc: Document) => {
-    const productData = doc.products.find(p => p.product === product);
-    return total + (productData ? productData.gross : 0);
-  }, 0);
+const sumGrossForProduct = (documents: Document[], product: string, model: string): number => {
+  if (model !== "packaging") {
+    return documents.reduce((total: number, doc: Document) => {
+      const productData = doc.products.find(p => p.product === product);
+      return total + (productData ? productData.gross : 0);
+    }, 0);
+  } else {
+    return documents.reduce((total: number, doc: Document) => {
+      const returnGross = doc.return?.reduce((returnTotal: number, returnItem) => {
+        // Check if doc.products is defined before calling .find()
+        if (!doc.products) return returnTotal; // Prevent error if products is undefined
+
+        // Only add gross if the return item's product matches
+        const productData = doc.products.find(p => p.product === product);
+        return returnTotal + (returnItem.gross && productData ? returnItem.gross : 0);
+      }, 0) || 0; // Default to 0 if return is undefined
+      return total + returnGross;
+    }, 0);
+  }
 };
 
-const sumWeightForProduct = (documents: Document[], product: string): number => {
-  return documents.reduce((total: number, doc: Document) => {
-    const productData = doc.products.find(p => p.product === product);
-    return total + (productData ? productData.totalWeight : 0);
-  }, 0);
+const sumWeightForProduct = (documents: Document[], product: string, model: string): number => {
+  if (model !== "packaging") {
+    return documents.reduce((total: number, doc: Document) => {
+      const productData = doc.products.find(p => p.product === product);
+      return total + (productData ? productData.totalWeight : 0);
+    }, 0);
+  } else {
+    return documents.reduce((total: number, doc: Document) => {
+      const returnWeight = doc.return?.reduce((returnTotal: number, returnItem) => {
+        return returnTotal + (returnItem.weight || 0); // Use optional chaining and defaulting to 0
+      }, 0) || 0; // Default to 0 if return is undefined
+      return total + returnWeight;
+    }, 0);
+  }
 };
 
-const sumPiecesForProduct = (documents: Document[], product: string): number => {
-  return documents.reduce((total: number, doc: Document) => {
-    const productData = doc.products.find(p => p.product === product);
-    return total + (productData ? productData.pieces : 0);
-  }, 0);
+const sumPiecesForProduct = (documents: Document[], product: string, model: string): number => {
+  if (model !== "packaging") {
+    return documents.reduce((total: number, doc: Document) => {
+      const productData = doc.products.find(p => p.product === product);
+      return total + (productData ? productData.pieces : 0);
+    }, 0);
+  } else {
+    return documents.reduce((total: number, doc: Document) => {
+      const returnPieces = doc.return?.reduce((returnTotal: number, returnItem) => {
+        return returnTotal + ((returnItem.gross || 0) * 12); // Optional chaining and defaulting to 0
+      }, 0) || 0; // Default to 0 if return is undefined
+      return total + returnPieces;
+    }, 0);
+  }
 };
 
 export const getProductGrossData = async () => {
@@ -56,21 +93,21 @@ export const getProductGrossData = async () => {
   const boxes = await Box.find();
 
   const productGrossData = await Promise.all(products.map(async (product) => {
-    const rawGross = sumGrossForProduct(rawMaterials, product.title);
-    const polishGross = sumGrossForProduct(polishes, product.title);
-    const colorGross = sumGrossForProduct(colors, product.title);
-    const packagingGross = sumGrossForProduct(packagings, product.title);
+    const rawGross = sumGrossForProduct(rawMaterials, product.title, "raw");
+    const polishGross = sumGrossForProduct(polishes, product.title, "polish");
+    const colorGross = sumGrossForProduct(colors, product.title, "color");
+    const packagingGross = sumGrossForProduct(packagings, product.title, "packaging");
     const boxCount = boxes.reduce((total: number, doc: Document) => {
       const boxData = doc.products.find(p => p.product === product.title);
-      return total + (boxData?.boxCount ?? 0);
+      return total + (boxData?.boxCount ?? 0); // Optional chaining and defaulting to 0
     }, 0);
 
     return {
       product: product.title,
       rawGross,
       polishGross,
-      colorGross,
       packagingGross,
+      colorGross,
       boxCount
     };
   }));
@@ -89,21 +126,21 @@ export const getProductWeightData = async () => {
   const boxes = await Box.find();
 
   const productWeightData = await Promise.all(products.map(async (product) => {
-    const rawGross = sumWeightForProduct(rawMaterials, product.title);
-    const polishGross = sumWeightForProduct(polishes, product.title);
-    const colorGross = sumWeightForProduct(colors, product.title);
-    const packagingGross = sumWeightForProduct(packagings, product.title);
+    const rawGross = sumWeightForProduct(rawMaterials, product.title, "raw");
+    const polishGross = sumWeightForProduct(polishes, product.title, "polish");
+    const colorGross = sumWeightForProduct(colors, product.title, "color");
+    const packagingGross = sumWeightForProduct(packagings, product.title, "packaging");
     const boxCount = boxes.reduce((total: number, doc: Document) => {
       const boxData = doc.products.find(p => p.product === product.title);
-      return total + (boxData?.boxCount ?? 0);
+      return total + (boxData?.boxCount ?? 0); // Optional chaining and defaulting to 0
     }, 0);
 
     return {
       product: product.title,
       rawGross,
       polishGross,
-      colorGross,
       packagingGross,
+      colorGross,
       boxCount
     };
   }));
@@ -122,21 +159,21 @@ export const getProductPiecesData = async () => {
   const boxes = await Box.find();
 
   const productPiecesData = await Promise.all(products.map(async (product) => {
-    const rawGross = sumPiecesForProduct(rawMaterials, product.title);
-    const polishGross = sumPiecesForProduct(polishes, product.title);
-    const colorGross = sumPiecesForProduct(colors, product.title);
-    const packagingGross = sumPiecesForProduct(packagings, product.title);
+    const rawGross = sumPiecesForProduct(rawMaterials, product.title, "raw");
+    const polishGross = sumPiecesForProduct(polishes, product.title, "polish");
+    const packagingGross = sumPiecesForProduct(packagings, product.title, "packaging");
+    const colorGross = sumPiecesForProduct(colors, product.title, "color");
     const boxCount = boxes.reduce((total: number, doc: Document) => {
       const boxData = doc.products.find(p => p.product === product.title);
-      return total + (boxData?.boxCount ?? 0);
+      return total + (boxData?.boxCount ?? 0); // Optional chaining and defaulting to 0
     }, 0);
 
     return {
       product: product.title,
       rawGross,
       polishGross,
-      colorGross,
       packagingGross,
+      colorGross,
       boxCount
     };
   }));

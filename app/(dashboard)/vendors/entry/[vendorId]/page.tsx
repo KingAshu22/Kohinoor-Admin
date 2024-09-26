@@ -1,10 +1,24 @@
 "use client";
 
 import Loader from "@/components/custom ui/Loader";
+import Modal from "@/components/custom ui/Modal";
+import { Button } from "@/components/ui/button";
 import { Pencil, Trash } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
 
 type PackagingProductType = {
   _id: string;
@@ -29,6 +43,15 @@ type PackagingProductType = {
   }[];
 };
 
+type ReturnData = {
+  _id: string;
+  date: string;
+  weight: number;
+  packets: number;
+  gross: number;
+  isVerified: boolean;
+};
+
 const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
   const [loading, setLoading] = useState(true);
   const [vendorName, setVendorName] = useState<string>("");
@@ -43,6 +66,13 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
   const [incompleteProducts, setIncompleteProducts] = useState<
     PackagingProductType[]
   >([]);
+  const [returnId, setReturnId] = useState("");
+  const [packagingId, setPackagingId] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [returnData, setReturnData] = useState<ReturnData>();
+  const [editPackets, setEditPackets] = useState(returnData?.packets || 0);
+  const [editGross, setEditGross] = useState(returnData?.gross || 0);
+  const [isVerified, setIsVerified] = useState(returnData?.isVerified || false);
 
   const getVendorDetails = async () => {
     try {
@@ -73,6 +103,14 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
   useEffect(() => {
     getVendorDetails();
   }, [params.vendorId]);
+
+  useEffect(() => {
+    if (returnData) {
+      setEditPackets(returnData.packets || 0);
+      setEditGross(returnData.gross || 0);
+      setIsVerified(returnData.isVerified || false);
+    }
+  }, [returnData]);
 
   useEffect(() => {
     if (vendorName) {
@@ -115,7 +153,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
     const inputPacket = Number(e.target.value);
     setPackets(inputPacket);
 
-    setGross(Number((inputPacket / 12).toFixed(1)))
+    setGross(Number((inputPacket / 12).toFixed(1)));
   };
 
   const handleRemainingWeightChange = (
@@ -125,11 +163,35 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
     setRemainingWeight(inputRemainingWeight);
   };
 
-  const handleGrossChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleGrossChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const gross = Number(e.target.value);
     setGross(gross);
+  };
+
+  const handleDelete = async (returnId: string, productId: string) => {
+    try {
+      await fetch(`/api/return`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          returnId,
+          productId,
+        }),
+      });
+      toast.success("Return Successfully Deleted");
+      getPackagingProducts();
+    } catch (err) {
+      console.error("[return_DELETE]", err);
+    }
+  };
+
+  const handleReturnEdit = (returnId: string, productId: string) => {
+    const returnPackage = packagingProducts.find((p) => p._id === packagingId);
+    const returnData = returnPackage?.return.find((p) => p._id === returnId);
+    setReturnData(returnData);
+    setReturnId(returnId);
+    setPackagingId(productId);
+    setShowModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -140,7 +202,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
       product: formData.get("product") as string,
       vendor: vendorName,
       weight: Number(formData.get("weight")),
-      packets: Number(formData.get("packets")),
+      packets: packets,
       remainingWeight: remainingWeight, // Use the manually edited remaining weight
       gross: gross,
     };
@@ -152,6 +214,36 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
         body: JSON.stringify(requestBody),
       });
       toast.success("Return Successfully Saved");
+      getPackagingProducts();
+      setSelectedProduct(undefined);
+      setWeight(undefined);
+      setRemainingWeight(0);
+      setGross(0);
+    } catch (err) {
+      console.error("[return_POST]", err);
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const requestBody = {
+      date: new Date().toISOString(),
+      packagingId,
+      returnId,
+      packets: Number(formData.get("packets")),
+      gross: Number(formData.get("gross")),
+      isVerified: Boolean(formData.get("isVerified")),
+    };
+
+    try {
+      await fetch(`/api/return`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+      toast.success("Return Successfully Edited");
+      setShowModal(false);
       getPackagingProducts();
       setSelectedProduct(undefined);
       setWeight(undefined);
@@ -268,48 +360,135 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                             <td className="border px-4 py-2">
                               {entry.product}
                             </td>
-                            <td className="border px-4 py-2">
-                              <input
-                                type="number"
-                                className="w-12"
-                                value={ret.weight}
-                              />
-                            </td>
-                            <td className="border px-4 py-2">
-                              <input
-                                type="number"
-                                className="w-12"
-                                value={ret.gross}
-                              />
-                            </td>
-                            <td className="border px-4 py-2">
-                              <input
-                                type="number"
-                                className="w-12"
-                                value={ret.packets}
-                              />
-                            </td>
+                            <td className="border px-4 py-2">{ret.weight}</td>
+                            <td className="border px-4 py-2">{ret.gross}</td>
+                            <td className="border px-4 py-2">{ret.packets}</td>
                             <td
-                              className={`border px-4 py-2 ${ret.isVerified
-                                ? "text-green-500"
-                                : "text-red-500"
-                                }`}
+                              className={`border px-4 py-2 ${
+                                ret.isVerified
+                                  ? "text-green-500"
+                                  : "text-red-500"
+                              }`}
                             >
                               {ret.isVerified ? "Verified" : "Unverified"}
                             </td>
                             <td className="border px-4 py-2">
-                              <Link href={`/${ret._id}`}>
+                              <Button
+                                onClick={() => {
+                                  handleReturnEdit(ret._id, entry._id);
+                                }}
+                              >
                                 <Pencil />
-                              </Link>
+                              </Button>
                             </td>
                             <td className="border px-4 py-2">
-                              <Trash />
+                              <AlertDialog>
+                                <AlertDialogTrigger>
+                                  <Button className="bg-red-1 text-white">
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="bg-white text-grey-1">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-red-1">
+                                      Are you absolutely sure?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This will
+                                      permanently delete your Return Entry
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>
+                                      Cancel
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-red-1 text-white"
+                                      onClick={() => {
+                                        handleDelete(ret._id, entry._id);
+                                      }}
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </td>
                           </tr>
                         ))
                       )}
                     </tbody>
                   </table>
+                  <Modal
+                    isOpen={showModal}
+                    onClose={() => {
+                      setShowModal(false);
+                    }}
+                    title={"Edit Return Entry Details"}
+                  >
+                    <form
+                      className="grid grid-cols-1 gap-4 md:grid-cols-5"
+                      onSubmit={handleEditSubmit}
+                    >
+                      <div className="flex flex-col">
+                        <label htmlFor="packets" className="mb-1 font-medium">
+                          Packets
+                        </label>
+                        <input
+                          type="number"
+                          name="packets"
+                          id="packets"
+                          required
+                          className="p-2 border border-gray-300 rounded"
+                          value={editPackets}
+                          onChange={(e) =>
+                            setEditPackets(Number(e.target.value))
+                          }
+                        />
+                      </div>
+
+                      <div className="flex flex-col">
+                        <label htmlFor="gross" className="mb-1 font-medium">
+                          Gross
+                        </label>
+                        <input
+                          type="number"
+                          name="gross"
+                          id="gross"
+                          required
+                          className="p-2 border border-gray-300 rounded"
+                          value={editGross}
+                          onChange={(e) => setEditGross(Number(e.target.value))}
+                        />
+                      </div>
+
+                      <div className="flex flex-col">
+                        <label
+                          htmlFor="isVerified"
+                          className="mb-1 font-medium"
+                        >
+                          Is Verified
+                        </label>
+                        <input
+                          type="checkbox"
+                          name="isVerified"
+                          id="isVerified"
+                          className="mt-4 h-6"
+                          checked={isVerified}
+                          onChange={(e) => setIsVerified(e.target.checked)}
+                        />
+                      </div>
+
+                      <div className="flex items-center col-span-1 md:col-span-5">
+                        <button
+                          type="submit"
+                          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+                        >
+                          Update
+                        </button>
+                      </div>
+                    </form>
+                  </Modal>
                 </div>
               )}
 
