@@ -42,6 +42,15 @@ type materialType = {
     gross: number;
     pieces: number;
   };
+  products: {
+    product: string;
+    totalWeight: number;
+    partialWeight: number;
+    vendor: string;
+    rate: number;
+    gross: number;
+    pieces: number;
+  }[];
 }
 
 
