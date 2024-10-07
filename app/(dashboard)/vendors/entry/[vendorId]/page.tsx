@@ -233,7 +233,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
       setWeight(undefined);
       setPackets(undefined)
       setRemainingWeight(0);
-      setGross(0);
+      setGross(0); // deault value
     } catch (err) {
       console.error("[box_POST]", err);
     }
