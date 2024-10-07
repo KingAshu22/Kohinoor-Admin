@@ -1,51 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDB } from "@/lib/mongoDB";
-import Box from "@/lib/models/Box";
+import Packaging from "@/lib/models/Packaging";
 
+// POST Method - Create a new boxing entry
 export const POST = async (req: NextRequest) => {
     try {
         await connectToDB();
+        const requestBody = await req.json();
 
-        const { date, products } = await req.json();
+        const {
+            date,
+            packagingId,
+            packets,
+            gross,
+            boxCount,
+            quantity,
+        } = requestBody;
 
-        if (!date || !products || !products.length) {
-            return new NextResponse("Not enough data to create a Packaging Entry", {
-                status: 400,
-            });
+        // Corrected this line by passing packagingId directly
+        const existingPackaging = await Packaging.findById(packagingId);
+
+        if (!existingPackaging) {
+            return new NextResponse("No packaging found for the specified vendor and product.", { status: 404 });
         }
 
-        const invalidProduct = products.some((product: any) =>
-            !product.product ||
-            !product.boxCount ||
-            !product.quantity
-        );
+        // Prepare the boxing object to be pushed into the box array
+        const boxingEntry = {
+            date,
+            packets: Number(packets),
+            gross: Number(gross),
+            boxCount: String(boxCount),
+            quantity: Number(quantity),
+        };
 
-        if (invalidProduct) {
-            return new NextResponse("Incomplete product data", {
-                status: 400,
-            });
-        }
+        // Add the new boxing entry to the box array
+        existingPackaging.box.push(boxingEntry);
 
-        const newBox = await Box.create({ date, products });
+        // Save the updated entry
+        await existingPackaging.save();
 
-        await newBox.save();
-
-        return new NextResponse(JSON.stringify(newBox), { status: 200 });
+        return new NextResponse("Boxing entry processed successfully", { status: 200 });
     } catch (err) {
-        console.log("[box_POST]", err);
+        console.error("[boxing_POST]", err);
         return new NextResponse("Internal Error", { status: 500 });
     }
 };
 
+// GET Method - Fetch all or specific vendor boxing entries
 export const GET = async (req: NextRequest) => {
     try {
         await connectToDB();
+        const { searchParams } = new URL(req.url);
+        const vendorName = searchParams.get("vendorName");
 
-        const box = await Box.find();
+        let boxingData;
+        if (vendorName) {
+            boxingData = await Packaging.find({ vendor: vendorName });
+        } else {
+            boxingData = await Packaging.find();
+        }
 
-        return new NextResponse(JSON.stringify(box), { status: 200 });
+        return new NextResponse(JSON.stringify(boxingData), { status: 200 });
     } catch (err) {
-        console.log("[box_GET]", err);
+        console.error("[boxing_GET]", err);
         return new NextResponse("Internal Error", { status: 500 });
     }
 };

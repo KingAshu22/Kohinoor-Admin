@@ -1,24 +1,31 @@
 import mongoose from "mongoose";
 
 const PackagingSchema = new mongoose.Schema({
-    date: String,
     vendor: String,
     product: String,
     rate: Number,
+    totalWeight: Number,
     remainingWeight: Number,
     isCompleted: Boolean,
-    packaging: {
+    packaging: [{
+        date: String,
         weight: Number,
         partialWeight: Number,
         gross: Number,
         pieces: Number,
-    },
+    }],
     return: [{
         date: String,
         weight: Number,
         packets: Number,
         gross: Number,
-        isVerified: Boolean,
+    }],
+    box: [{
+        date: String,
+        packets: Number,
+        gross: Number,
+        boxCount: String,
+        quantity: Number,
     }],
 }, { toJSON: { getters: true } });
 

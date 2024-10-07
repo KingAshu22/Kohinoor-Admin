@@ -93,7 +93,7 @@ export const PUT = async (req: NextRequest) => {
     try {
         await connectToDB();
         const requestBody = await req.json();
-        const { packagingId, returnId, packets, gross, isVerified } = requestBody;
+        const { packagingId, returnId, packets, gross } = requestBody;
 
         if (!packagingId || !returnId) {
             return new NextResponse("Packaging ID and Return ID are required", {
@@ -116,7 +116,6 @@ export const PUT = async (req: NextRequest) => {
         // Update the fields for the return entry
         returnEntry.packets = packets;
         returnEntry.gross = gross;
-        returnEntry.isVerified = isVerified;
 
         // Save the updated packaging document
         await packaging.save();
@@ -148,6 +147,7 @@ export const DELETE = async (req: NextRequest) => {
             return new NextResponse("Product not found", { status: 404 });
         }
 
+        // Filter out the return entry to be deleted
         const updatedReturns = packaging.return.filter(
             (ret: ReturnObject) => ret._id.toString() !== returnId
         );
@@ -156,12 +156,20 @@ export const DELETE = async (req: NextRequest) => {
             return new NextResponse("Return entry not found", { status: 404 });
         }
 
+        // Calculate the total return weight after the deletion
         const totalReturnWeight = updatedReturns.reduce(
             (total: number, ret: ReturnObject) => total + ret.weight,
             0
         );
 
-        packaging.remainingWeight = packaging.packaging.weight - totalReturnWeight;
+        // Sum up the total weight from the packaging array (if it's an array)
+        const totalPackagingWeight = packaging.packaging.reduce(
+            (total: number, pkg: { weight: number }) => total + pkg.weight,
+            0
+        );
+
+        // Update the remainingWeight based on the updated return weights
+        packaging.remainingWeight = totalPackagingWeight - totalReturnWeight;
         packaging.return = updatedReturns;
 
         await packaging.save();

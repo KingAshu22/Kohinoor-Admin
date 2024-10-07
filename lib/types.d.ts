@@ -44,7 +44,38 @@ type materialType = {
   };
 }
 
+type PackagingProductType = {
+  _id: string;
+  date: string;
+  product: string;
+  vendor: string;
+  rate: number;
+  totalWeight: number;
+  remainingWeight: number;
+  isCompleted: boolean;
+  packaging: {
+    weight: number;
+    gross: number;
+    pieces: number;
+  }[];
+  return: {
+    _id: string;
+    date: string;
+    weight: number;
+    packets: number;
+    gross: number;
+    isVerified: boolean;
+  }[];
+};
 
+type ReturnData = {
+  _id: string;
+  date: string;
+  weight: number;
+  packets: number;
+  gross: number;
+  isVerified: boolean;
+};
 
 type OrderColumnType = {
   _id: string;

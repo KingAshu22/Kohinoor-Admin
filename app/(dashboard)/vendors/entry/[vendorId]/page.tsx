@@ -3,8 +3,7 @@
 import Loader from "@/components/custom ui/Loader";
 import Modal from "@/components/custom ui/Modal";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash } from "lucide-react";
-import Link from "next/link";
+import { Box, Pencil, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
@@ -18,39 +17,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Switch } from "@/components/ui/switch";
-
-type PackagingProductType = {
-  _id: string;
-  date: string;
-  product: string;
-  vendor: string;
-  rate: number;
-  remainingWeight: number;
-  isCompleted: boolean;
-  packaging: {
-    weight: number;
-    gross: number;
-    pieces: number;
-  };
-  return: {
-    _id: string;
-    date: string;
-    weight: number;
-    packets: number;
-    gross: number;
-    isVerified: boolean;
-  }[];
-};
-
-type ReturnData = {
-  _id: string;
-  date: string;
-  weight: number;
-  packets: number;
-  gross: number;
-  isVerified: boolean;
-};
 
 const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
   const [loading, setLoading] = useState(true);
@@ -69,6 +35,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
   const [returnId, setReturnId] = useState("");
   const [packagingId, setPackagingId] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [showBoxModal, setShowBoxModal] = useState(false);
   const [returnData, setReturnData] = useState<ReturnData>();
   const [editPackets, setEditPackets] = useState(returnData?.packets || 0);
   const [editGross, setEditGross] = useState(returnData?.gross || 0);
@@ -91,14 +58,20 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
   const getPackagingProducts = async () => {
     try {
       setLoading(true);
+
+      // Fetch packaging products
       const res = await fetch(`/api/packagings/vendor/${vendorName}`);
-      const data = await res.json();
+      const data: PackagingProductType[] = await res.json();
       setPackagingProducts(data);
       setLoading(false);
+
     } catch (error) {
       console.error("Error fetching packaging products:", error);
+      setLoading(false);
     }
   };
+
+
 
   useEffect(() => {
     getVendorDetails();
@@ -144,7 +117,9 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
         (p) => p.product === selectedProduct
       );
       if (product) {
-        setRemainingWeight(product.remainingWeight - inputWeight);
+        const remainingWeight = product.remainingWeight - inputWeight;
+        remainingWeight < 0 ? toast.error("Weight cannot exceed Total Weight") :
+          setRemainingWeight(product.remainingWeight - inputWeight);
       }
     }
   };
@@ -194,9 +169,18 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
     setShowModal(true);
   };
 
+  const handleBoxEntry = (productId: string) => {
+    setPackagingId(productId);
+    setShowBoxModal(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    if (remainingWeight && Number(formData.get("weight")) - remainingWeight < 0) {
+      toast.error("Please enter correct weight");
+      return
+    }
     const requestBody = {
       date: new Date().toISOString(),
       product: formData.get("product") as string,
@@ -224,6 +208,37 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
     }
   };
 
+  const handleBoxSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const requestBody = {
+      date: new Date().toISOString(),
+      packagingId,
+      packets: Number(formData.get("packets")),
+      gross: Number(formData.get("gross")),
+      boxCount: Number(formData.get("boxCount")),
+      quantity: Number(formData.get("quantity")),
+    };
+
+    try {
+      await fetch(`/api/box`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+      toast.success("Box Successfully Created!");
+      setShowBoxModal(false);
+      getPackagingProducts();
+      setSelectedProduct(undefined);
+      setWeight(undefined);
+      setPackets(undefined)
+      setRemainingWeight(0);
+      setGross(0);
+    } catch (err) {
+      console.error("[box_POST]", err);
+    }
+  };
+
   const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -233,7 +248,6 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
       returnId,
       packets: Number(formData.get("packets")),
       gross: Number(formData.get("gross")),
-      isVerified: Boolean(formData.get("isVerified")),
     };
 
     try {
@@ -247,6 +261,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
       getPackagingProducts();
       setSelectedProduct(undefined);
       setWeight(undefined);
+      setPackets(undefined)
       setRemainingWeight(0);
       setGross(0);
     } catch (err) {
@@ -286,7 +301,6 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                 <table className="min-w-full table-auto border-collapse border border-gray-200">
                   <thead>
                     <tr className="bg-gray-100">
-                      <th className="border px-4 py-2 text-left">Date</th>
                       <th className="border px-4 py-2 text-left">Product</th>
                       <th className="border px-4 py-2 text-left">Weight</th>
                       <th className="border px-4 py-2 text-left">Remaining</th>
@@ -295,30 +309,20 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {packagingProducts.map((entry) => (
-                      <tr key={entry._id}>
-                        <td className="border px-4 py-2">
-                          {new Date(entry.date).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </td>
-                        <td className="border px-4 py-2">{entry.product}</td>
-                        <td className="border px-4 py-2">
-                          {entry.packaging.weight}
-                        </td>
-                        <td className="border px-4 py-2">
-                          {entry.remainingWeight}
-                        </td>
-                        <td className="border px-4 py-2">
-                          {entry.packaging.gross}
-                        </td>
-                        <td className="border px-4 py-2">
-                          {entry.packaging.pieces}
-                        </td>
-                      </tr>
-                    ))}
+                    {packagingProducts.map((entry) => {
+                      const totalGross = entry.packaging.reduce((sum, pkg) => sum + pkg.gross, 0);
+                      const totalPieces = entry.packaging.reduce((sum, pkg) => sum + pkg.pieces, 0);
+
+                      return (
+                        <tr key={entry._id}>
+                          <td className="border px-4 py-2">{entry.product}</td>
+                          <td className="border px-4 py-2">{entry.totalWeight.toLocaleString("en-in")}</td>
+                          <td className="border px-4 py-2">{entry.remainingWeight.toLocaleString("en-in")}</td>
+                          <td className="border px-4 py-2">{totalGross.toLocaleString("en-in")}</td>
+                          <td className="border px-4 py-2">{totalPieces.toLocaleString("en-in")}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -341,7 +345,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                         <th className="border px-4 py-2 text-left">Weight</th>
                         <th className="border px-4 py-2 text-left">Gross</th>
                         <th className="border px-4 py-2 text-left">Packets</th>
-                        <th className="border px-4 py-2 text-left">Verified</th>
+                        <th className="border px-4 py-2 text-left">Boxing</th>
                         <th className="border px-4 py-2 text-left">Edit</th>
                         <th className="border px-4 py-2 text-left">Delete</th>
                       </tr>
@@ -363,14 +367,14 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                             <td className="border px-4 py-2">{ret.weight}</td>
                             <td className="border px-4 py-2">{ret.gross}</td>
                             <td className="border px-4 py-2">{ret.packets}</td>
-                            <td
-                              className={`border px-4 py-2 ${
-                                ret.isVerified
-                                  ? "text-green-500"
-                                  : "text-red-500"
-                              }`}
-                            >
-                              {ret.isVerified ? "Verified" : "Unverified"}
+                            <td className="border px-4 py-2">
+                              <Button
+                                onClick={() => {
+                                  handleBoxEntry(entry._id);
+                                }}
+                              >
+                                <Box />
+                              </Button>
                             </td>
                             <td className="border px-4 py-2">
                               <Button
@@ -441,8 +445,66 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                           required
                           className="p-2 border border-gray-300 rounded"
                           value={editPackets}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setEditPackets(Number(e.target.value))
+                            setEditGross(Number((Number(e.target.value) / 122).toFixed(1)))
+                          }
+                          }
+                        />
+                      </div>
+
+                      <div className="flex flex-col">
+                        <label htmlFor="gross" className="mb-1 font-medium">
+                          Gross
+                        </label>
+                        <input
+                          type="number"
+                          name="gross"
+                          id="gross"
+                          required
+                          className="p-2 border border-gray-300 rounded"
+                          value={editGross}
+                          onChange={(e) => setEditGross(Number(e.target.value))}
+                        />
+                      </div>
+
+                      <div className="flex items-center col-span-1 md:col-span-5">
+                        <button
+                          type="submit"
+                          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+                        >
+                          Update
+                        </button>
+                      </div>
+                    </form>
+                  </Modal>
+
+                  <Modal
+                    isOpen={showBoxModal}
+                    onClose={() => {
+                      setShowBoxModal(false);
+                    }}
+                    title={"Add Box Entry Details"}
+                  >
+                    <form
+                      className="grid grid-cols-1 gap-4 md:grid-cols-5"
+                      onSubmit={handleBoxSubmit}
+                    >
+                      <div className="flex flex-col">
+                        <label htmlFor="packets" className="mb-1 font-medium">
+                          Packets
+                        </label>
+                        <input
+                          type="number"
+                          name="packets"
+                          id="packets"
+                          required
+                          className="p-2 border border-gray-300 rounded"
+                          value={editPackets}
+                          onChange={(e) => {
+                            setEditPackets(Number(e.target.value))
+                            setEditGross(Number((Number(e.target.value) / 122).toFixed(1)))
+                          }
                           }
                         />
                       </div>
@@ -463,20 +525,38 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                       </div>
 
                       <div className="flex flex-col">
-                        <label
-                          htmlFor="isVerified"
-                          className="mb-1 font-medium"
-                        >
-                          Is Verified
+                        <label htmlFor="gross" className="mb-1 font-medium">
+                          Box Count
                         </label>
                         <input
-                          type="checkbox"
-                          name="isVerified"
-                          id="isVerified"
-                          className="mt-4 h-6"
-                          checked={isVerified}
-                          onChange={(e) => setIsVerified(e.target.checked)}
+                          type="number"
+                          name="boxCount"
+                          id="boxCount"
+                          required
+                          placeholder="Box Count"
+                          className="p-2 border border-gray-300 rounded"
                         />
+                      </div>
+
+                      <div className="flex flex-col">
+                        <label htmlFor="gross" className="mb-1 font-medium">
+                          Quantity
+                        </label>
+                        <select
+                          className="border-gray border-2 w-32 h-10 rounded-lg"
+                          name="quantity"
+                          id="quantity"
+                          required
+                        >
+                          <option value="">Select Quantity</option>
+                          <option value="1 Gross">1 Gross</option>
+                          <option value="2 Gross">2 Gross</option>
+                          <option value="60">60</option>
+                          <option value="90">90</option>
+                          <option value="100">100</option>
+                          <option value="200">200</option>
+                          <option value="300">300</option>
+                        </select>
                       </div>
 
                       <div className="flex items-center col-span-1 md:col-span-5">
@@ -484,7 +564,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                           type="submit"
                           className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
                         >
-                          Update
+                          Submit
                         </button>
                       </div>
                     </form>
