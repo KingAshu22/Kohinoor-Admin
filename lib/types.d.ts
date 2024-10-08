@@ -75,6 +75,14 @@ type PackagingProductType = {
     gross: number;
     isVerified: boolean;
   }[];
+  box: {
+    _id: string;
+    date: string;
+    packets: number;
+    gross: number;
+    boxCount: string;
+    quantity: number;
+  }[];
 };
 
 type ReturnData = {

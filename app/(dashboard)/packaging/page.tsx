@@ -14,7 +14,7 @@ const Packagings = () => {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
-  const [Packaging, setPackaging] = useState<materialType[]>([]);
+  const [Packaging, setPackaging] = useState<PackagingProductType[]>([]);
 
   const getPackaging = async () => {
     try {
