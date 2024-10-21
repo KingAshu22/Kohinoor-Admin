@@ -35,11 +35,9 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
   const [returnId, setReturnId] = useState("");
   const [packagingId, setPackagingId] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [showBoxModal, setShowBoxModal] = useState(false);
   const [returnData, setReturnData] = useState<ReturnData>();
   const [editPackets, setEditPackets] = useState(returnData?.packets || 0);
   const [editGross, setEditGross] = useState(returnData?.gross || 0);
-  const [isVerified, setIsVerified] = useState(returnData?.isVerified || false);
 
   const getVendorDetails = async () => {
     try {
@@ -81,7 +79,6 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
     if (returnData) {
       setEditPackets(returnData.packets || 0);
       setEditGross(returnData.gross || 0);
-      setIsVerified(returnData.isVerified || false);
     }
   }, [returnData]);
 
@@ -169,18 +166,9 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
     setShowModal(true);
   };
 
-  const handleBoxEntry = (productId: string) => {
-    setPackagingId(productId);
-    setShowBoxModal(true);
-  };
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    if (remainingWeight && Number(formData.get("weight")) - remainingWeight < 0) {
-      toast.error("Please enter correct weight");
-      return
-    }
     const requestBody = {
       date: new Date().toISOString(),
       product: formData.get("product") as string,
@@ -205,37 +193,6 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
       setGross(0);
     } catch (err) {
       console.error("[return_POST]", err);
-    }
-  };
-
-  const handleBoxSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const requestBody = {
-      date: new Date().toISOString(),
-      packagingId,
-      packets: Number(formData.get("packets")),
-      gross: Number(formData.get("gross")),
-      boxCount: Number(formData.get("boxCount")),
-      quantity: Number(formData.get("quantity")),
-    };
-
-    try {
-      await fetch(`/api/box`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      });
-      toast.success("Box Successfully Created!");
-      setShowBoxModal(false);
-      getPackagingProducts();
-      setSelectedProduct(undefined);
-      setWeight(undefined);
-      setPackets(undefined)
-      setRemainingWeight(0);
-      setGross(0); // deault value
-    } catch (err) {
-      console.error("[box_POST]", err);
     }
   };
 
@@ -304,7 +261,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                       <th className="border px-4 py-2 text-left">Product</th>
                       <th className="border px-4 py-2 text-left">Weight</th>
                       <th className="border px-4 py-2 text-left">Remaining</th>
-                      <th className="border px-4 py-2 text-left">Gross</th>
+                      <th className="border px-4 py-2 text-left">Dozens</th>
                       <th className="border px-4 py-2 text-left">Pieces</th>
                     </tr>
                   </thead>
@@ -343,9 +300,8 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                         <th className="border px-4 py-2 text-left">Date</th>
                         <th className="border px-4 py-2 text-left">Product</th>
                         <th className="border px-4 py-2 text-left">Weight</th>
-                        <th className="border px-4 py-2 text-left">Gross</th>
+                        <th className="border px-4 py-2 text-left">Dozens</th>
                         <th className="border px-4 py-2 text-left">Packets</th>
-                        <th className="border px-4 py-2 text-left">Boxing</th>
                         <th className="border px-4 py-2 text-left">Edit</th>
                         <th className="border px-4 py-2 text-left">Delete</th>
                       </tr>
@@ -367,15 +323,6 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                             <td className="border px-4 py-2">{ret.weight}</td>
                             <td className="border px-4 py-2">{ret.gross}</td>
                             <td className="border px-4 py-2">{ret.packets}</td>
-                            <td className="border px-4 py-2">
-                              <Button
-                                onClick={() => {
-                                  handleBoxEntry(entry._id);
-                                }}
-                              >
-                                <Box />
-                              </Button>
-                            </td>
                             <td className="border px-4 py-2">
                               <Button
                                 onClick={() => {
@@ -455,7 +402,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
 
                       <div className="flex flex-col">
                         <label htmlFor="gross" className="mb-1 font-medium">
-                          Gross
+                          Dozens
                         </label>
                         <input
                           type="number"
@@ -474,97 +421,6 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                           className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
                         >
                           Update
-                        </button>
-                      </div>
-                    </form>
-                  </Modal>
-
-                  <Modal
-                    isOpen={showBoxModal}
-                    onClose={() => {
-                      setShowBoxModal(false);
-                    }}
-                    title={"Add Box Entry Details"}
-                  >
-                    <form
-                      className="grid grid-cols-1 gap-4 md:grid-cols-5"
-                      onSubmit={handleBoxSubmit}
-                    >
-                      <div className="flex flex-col">
-                        <label htmlFor="packets" className="mb-1 font-medium">
-                          Packets
-                        </label>
-                        <input
-                          type="number"
-                          name="packets"
-                          id="packets"
-                          required
-                          className="p-2 border border-gray-300 rounded"
-                          value={editPackets}
-                          onChange={(e) => {
-                            setEditPackets(Number(e.target.value))
-                            setEditGross(Number((Number(e.target.value) / 122).toFixed(1)))
-                          }
-                          }
-                        />
-                      </div>
-
-                      <div className="flex flex-col">
-                        <label htmlFor="gross" className="mb-1 font-medium">
-                          Gross
-                        </label>
-                        <input
-                          type="number"
-                          name="gross"
-                          id="gross"
-                          required
-                          className="p-2 border border-gray-300 rounded"
-                          value={editGross}
-                          onChange={(e) => setEditGross(Number(e.target.value))}
-                        />
-                      </div>
-
-                      <div className="flex flex-col">
-                        <label htmlFor="gross" className="mb-1 font-medium">
-                          Box Count
-                        </label>
-                        <input
-                          type="number"
-                          name="boxCount"
-                          id="boxCount"
-                          required
-                          placeholder="Box Count"
-                          className="p-2 border border-gray-300 rounded"
-                        />
-                      </div>
-
-                      <div className="flex flex-col">
-                        <label htmlFor="gross" className="mb-1 font-medium">
-                          Quantity
-                        </label>
-                        <select
-                          className="border-gray border-2 w-32 h-10 rounded-lg"
-                          name="quantity"
-                          id="quantity"
-                          required
-                        >
-                          <option value="">Select Quantity</option>
-                          <option value="1 Gross">1 Gross</option>
-                          <option value="2 Gross">2 Gross</option>
-                          <option value="60">60</option>
-                          <option value="90">90</option>
-                          <option value="100">100</option>
-                          <option value="200">200</option>
-                          <option value="300">300</option>
-                        </select>
-                      </div>
-
-                      <div className="flex items-center col-span-1 md:col-span-5">
-                        <button
-                          type="submit"
-                          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
-                        >
-                          Submit
                         </button>
                       </div>
                     </form>
@@ -643,7 +499,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                 </div>
                 <div className="flex flex-col">
                   <label htmlFor="gross" className="mb-1 font-medium">
-                    Gross
+                    Dozens
                   </label>
                   <input
                     type="number"

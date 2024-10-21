@@ -14,6 +14,7 @@ export const GET = async (
     try {
         await connectToDB();
 
+        // Find the vendor by ID
         const vendor = await Vendor.findById(params.vendorId);
 
         if (!vendor) {
@@ -36,29 +37,35 @@ export const GET = async (
 
         let results;
 
+        // Modify queries to use $elemMatch to match only the products for the specific vendor
+        const query = {
+            date: { $gte: startDate, $lte: endDate },
+            products: { $elemMatch: { vendor: vendor.name } },  // Match only the vendor's products
+        };
+
         switch (vendor.type) {
             case "Raw Material":
-                results = await RawMaterial.find({
-                    date: { $gte: startDate, $lte: endDate },
-                    "products.vendor": vendor.name,
+                results = await RawMaterial.find(query, {
+                    "products.$": 1, // Return only the matched product
+                    date: 1, // Return the date for context
                 });
                 break;
             case "Polishing":
-                results = await Polish.find({
-                    date: { $gte: startDate, $lte: endDate },
-                    "products.vendor": vendor.name,
+                results = await Polish.find(query, {
+                    "products.$": 1,
+                    date: 1,
                 });
                 break;
             case "Work From Home":
-                results = await Packaging.find({
-                    date: { $gte: startDate, $lte: endDate },
-                    "products.vendor": vendor.name,
+                results = await Packaging.find(query, {
+                    "products.$": 1,
+                    date: 1,
                 });
                 break;
             case "Work From Office":
-                results = await Office.find({
-                    date: { $gte: startDate, $lte: endDate },
-                    "products.vendor": vendor.name,
+                results = await Office.find(query, {
+                    "products.$": 1,
+                    date: 1,
                 });
                 break;
             default:
@@ -68,6 +75,7 @@ export const GET = async (
                 );
         }
 
+        // Return the filtered results
         return NextResponse.json(results, { status: 200 });
     } catch (err) {
         console.log("[vendorId_GET]", err);

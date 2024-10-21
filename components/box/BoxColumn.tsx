@@ -6,9 +6,9 @@ import Link from "next/link";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "../ui/button";
 
-export const columns: ColumnDef<materialType>[] = [
+export const columns: ColumnDef<PackagingProductType>[] = [
   {
-    accessorKey: "date",
+    accessorKey: "box",
     header: ({ column }) => {
       return (
         <Button
@@ -20,34 +20,17 @@ export const columns: ColumnDef<materialType>[] = [
         </Button>
       );
     },
-    cell: ({ row }) => (
-      <Link href={`/box/${row.original._id}`} className="hover:text-red-1">
-        {row.original.date}
-      </Link>
-    ),
-  },
-  {
-    accessorKey: "products",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Products
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
     cell: ({ row }) => {
-      const products = Array.from(
-        new Set(row.original.products.map((product: any) => product.product))
-      );
-      return <div>{products.join(", ")}</div>;
+      const boxItems = row.original.box.filter((boxItem: any) => boxItem);
+      return boxItems.length > 0 ? (
+        <Link href={`/box/${row.original._id}`} className="hover:text-red-1">
+          {boxItems.map((boxItem: any) => boxItem.date).join(", ")}
+        </Link>
+      ) : null;  // If no box items, render nothing
     },
   },
   {
-    accessorKey: "products",
+    accessorKey: "boxCount",
     header: ({ column }) => {
       return (
         <Button
@@ -60,10 +43,10 @@ export const columns: ColumnDef<materialType>[] = [
       );
     },
     cell: ({ row }) => {
-      const boxCount = row.original.products.map(
-        (product: any) => product.boxCount
-      );
-      return <div>{boxCount.join(", ")}</div>;
+      const boxItems = row.original.box.filter((boxItem: any) => boxItem);
+      return boxItems.length > 0 ? (
+        <div>{boxItems.map((boxItem: any) => boxItem.boxCount).join(", ")}</div>
+      ) : null;  // If no box items, render nothing
     },
   },
   {
@@ -80,14 +63,17 @@ export const columns: ColumnDef<materialType>[] = [
       );
     },
     cell: ({ row }) => {
-      const quantity = row.original.products.map(
-        (product: any) => product.quantity
-      );
-      return <div>{quantity.join(", ")}</div>;
+      const boxItems = row.original.box.filter((boxItem: any) => boxItem);
+      return boxItems.length > 0 ? (
+        <div>{boxItems.map((boxItem: any) => boxItem.quantity).join(", ")}</div>
+      ) : null;  // If no box items, render nothing
     },
   },
   {
     id: "actions",
-    cell: ({ row }) => <Delete item="box" id={row.original._id} />,
+    cell: ({ row }) => {
+      const boxItems = row.original.box.filter((boxItem: any) => boxItem);
+      return boxItems.length > 0 ? <Delete item="box" id={row.original._id} /> : null;  // Only show actions if there are box entries
+    },
   },
 ];

@@ -40,27 +40,29 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
         vendorDetails?.type === "Work From Office"
           ? Array.isArray(data)
             ? data
-                .map((entry: any) =>
-                  entry.products.map((product: any) => {
-                    const amount = product.rate * product.sheetCount;
-                    totalAmount += amount;
-                    return {
-                      product: product.product,
-                      rate: product.rate,
-                      gross: product.sheetCount,
-                      amount,
-                    };
-                  })
-                )
-                .flat()
+              .map((entry: any) =>
+                entry.products.map((product: any) => {
+                  const amount = product.rate * product.sheetCount;
+                  totalAmount += amount;
+                  return {
+                    date: entry.date, // Include date here
+                    product: product.product,
+                    rate: product.rate,
+                    gross: product.sheetCount,
+                    amount,
+                  };
+                })
+              )
+              .flat()
             : []
           : Array.isArray(data)
-          ? data
+            ? data
               .map((entry: any) =>
                 entry.products.map((product: any) => {
                   const amount = product.rate * product.gross;
                   totalAmount += amount;
                   return {
+                    date: entry.date, // Include date here
                     product: product.product,
                     rate: product.rate,
                     gross: product.gross,
@@ -69,7 +71,7 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
                 })
               )
               .flat()
-          : [];
+            : [];
 
       setSalaryData(formattedData);
       setTotal(totalAmount);
@@ -146,40 +148,38 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
           <table className="min-w-full mt-6 bg-white border border-gray-300">
             <thead>
               <tr>
+                <th className="py-2 px-4 border">Date</th>
                 <th className="py-2 px-4 border">Product Name</th>
                 <th className="py-2 px-4 border">Rate</th>
-                <th className="py-2 px-4 border">Gross Count</th>
+                <th className="py-2 px-4 border">Count</th>
                 <th className="py-2 px-4 border">Subtotal</th>
               </tr>
             </thead>
             <tbody>
               {salaryData.map((item, index) => (
                 <tr key={index}>
+                  <td className="py-2 px-4 border">
+                    {new Date(item.date).toLocaleDateString("en-IN")} {/* Format date */}
+                  </td>
                   <td className="py-2 px-4 border">{item.product}</td>
+                  <td className="py-2 px-4 border">{item.rate.toLocaleString("en-IN")}</td>
+                  <td className="py-2 px-4 border">{item.gross.toLocaleString("en-IN")}</td>
                   <td className="py-2 px-4 border">
-                    {item.rate.toLocaleString("en-IN")}
-                  </td>
-                  <td className="py-2 px-4 border">
-                    {item.gross.toLocaleString("en-IN")}
-                  </td>
-                  <td className="py-2 px-4 border">
-                    ₹{" "}
-                    {parseFloat(item.amount.toFixed(2)).toLocaleString("en-IN")}
+                    ₹ {parseFloat(item.amount.toFixed(2)).toLocaleString("en-IN")}
                   </td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={3} className="py-2 px-4 border font-bold">
-                  Total
-                </td>
+                <td colSpan={3} className="py-2 px-4 border font-bold">Total</td>
                 <td className="py-2 px-4 border font-bold">
                   ₹ {parseFloat(total.toFixed(2)).toLocaleString("en-IN")}/-
                 </td>
               </tr>
             </tfoot>
           </table>
+
 
           <button
             onClick={handlePrint}
