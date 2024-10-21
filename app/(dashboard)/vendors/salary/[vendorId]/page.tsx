@@ -12,7 +12,8 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
   const [total, setTotal] = useState(0);
 
   const printRef = useRef<HTMLDivElement>(null);
-  // Vendor Details
+
+  // Fetch Vendor Details
   const getVendorDetails = async () => {
     try {
       const res = await fetch(`/api/vendors/${params.vendorId}`, {
@@ -26,6 +27,7 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
     }
   };
 
+  // Fetch Salary Details
   const getSalaryDetails = async () => {
     try {
       const res = await fetch(
@@ -40,12 +42,12 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
         vendorDetails?.type === "Work From Office"
           ? Array.isArray(data)
             ? data
-              .map((entry: any) =>
+              .flatMap((entry: any) =>
                 entry.products.map((product: any) => {
                   const amount = product.rate * product.sheetCount;
                   totalAmount += amount;
                   return {
-                    date: entry.date, // Include date here
+                    date: entry.date,
                     product: product.product,
                     rate: product.rate,
                     gross: product.sheetCount,
@@ -53,24 +55,21 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
                   };
                 })
               )
-              .flat()
             : []
           : Array.isArray(data)
-            ? data
-              .map((entry: any) =>
-                entry.products.map((product: any) => {
-                  const amount = product.rate * product.gross;
-                  totalAmount += amount;
-                  return {
-                    date: entry.date, // Include date here
-                    product: product.product,
-                    rate: product.rate,
-                    gross: product.gross,
-                    amount,
-                  };
-                })
-              )
-              .flat()
+            ? data.flatMap((entry: any) =>
+              entry.products.map((product: any) => {
+                const amount = product.rate * product.gross;
+                totalAmount += amount;
+                return {
+                  date: entry.date,
+                  product: product.product,
+                  rate: product.rate,
+                  gross: product.gross,
+                  amount,
+                };
+              })
+            )
             : [];
 
       setSalaryData(formattedData);
@@ -159,11 +158,15 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
               {salaryData.map((item, index) => (
                 <tr key={index}>
                   <td className="py-2 px-4 border">
-                    {new Date(item.date).toLocaleDateString("en-IN")} {/* Format date */}
+                    {new Date(item.date).toLocaleDateString("en-IN")}
                   </td>
                   <td className="py-2 px-4 border">{item.product}</td>
-                  <td className="py-2 px-4 border">{item.rate.toLocaleString("en-IN")}</td>
-                  <td className="py-2 px-4 border">{item.gross.toLocaleString("en-IN")}</td>
+                  <td className="py-2 px-4 border">
+                    {item.rate.toLocaleString("en-IN")}
+                  </td>
+                  <td className="py-2 px-4 border">
+                    {item.gross.toLocaleString("en-IN")}
+                  </td>
                   <td className="py-2 px-4 border">
                     ₹ {parseFloat(item.amount.toFixed(2)).toLocaleString("en-IN")}
                   </td>
@@ -179,7 +182,6 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
               </tr>
             </tfoot>
           </table>
-
 
           <button
             onClick={handlePrint}
