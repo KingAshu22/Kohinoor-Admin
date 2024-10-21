@@ -12,7 +12,7 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
   const [total, setTotal] = useState(0);
 
   const printRef = useRef<HTMLDivElement>(null);
-
+  // Vendor Details
   const getVendorDetails = async () => {
     try {
       const res = await fetch(`/api/vendors/${params.vendorId}`, {
