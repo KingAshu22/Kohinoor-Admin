@@ -14,7 +14,7 @@ const Box = () => {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
-  const [box, setBox] = useState<materialType[]>([]);
+  const [box, setBox] = useState<PackagingProductType[]>([]);
 
   const getBox = async () => {
     try {
