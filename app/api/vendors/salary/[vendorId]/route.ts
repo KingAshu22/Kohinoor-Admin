@@ -37,36 +37,35 @@ export const GET = async (
 
         let results;
 
-        // Modify queries to use $elemMatch to match only the products for the specific vendor
+        // Modify queries to use $filter to match all products for the specific vendor
         const query = {
             date: { $gte: startDate, $lte: endDate },
-            products: { $elemMatch: { vendor: vendor.name } },  // Match only the vendor's products
+            products: { $exists: true },  // Ensure products field exists
+        };
+
+        const projection = {
+            date: 1,
+            products: {
+                $filter: {
+                    input: "$products",
+                    as: "product",
+                    cond: { $eq: ["$$product.vendor", vendor.name] }, // Filter products by vendor
+                },
+            },
         };
 
         switch (vendor.type) {
             case "Raw Material":
-                results = await RawMaterial.find(query, {
-                    "products.$": 1, // Return only the matched product
-                    date: 1, // Return the date for context
-                });
+                results = await RawMaterial.find(query, projection);
                 break;
             case "Polishing":
-                results = await Polish.find(query, {
-                    "products.$": 1,
-                    date: 1,
-                });
+                results = await Polish.find(query, projection);
                 break;
             case "Work From Home":
-                results = await Packaging.find(query, {
-                    "products.$": 1,
-                    date: 1,
-                });
+                results = await Packaging.find(query, projection);
                 break;
             case "Work From Office":
-                results = await Office.find(query, {
-                    "products.$": 1,
-                    date: 1,
-                });
+                results = await Office.find(query, projection);
                 break;
             default:
                 return new NextResponse(
