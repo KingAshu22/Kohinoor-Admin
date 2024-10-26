@@ -35,9 +35,12 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
   const [returnId, setReturnId] = useState("");
   const [packagingId, setPackagingId] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [showBoxModal, setShowBoxModal] = useState(false);
   const [returnData, setReturnData] = useState<ReturnData>();
   const [editPackets, setEditPackets] = useState(returnData?.packets || 0);
   const [editGross, setEditGross] = useState(returnData?.gross || 0);
+  const [boxCount, setBoxCount] = useState(0);
+  const [isVerified, setIsVerified] = useState(returnData?.isVerified || false);
 
   const getVendorDetails = async () => {
     try {
@@ -76,6 +79,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
     if (returnData) {
       setEditPackets(returnData.packets || 0);
       setEditGross(returnData.gross || 0);
+      setIsVerified(returnData.isVerified || false);
     }
   }, [returnData]);
 
@@ -138,6 +142,33 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
     setGross(gross);
   };
 
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedQuantity = e.target.value;
+    let divisor = 1;
+
+    if (selectedQuantity === "1 Gross") {
+      divisor = 144;
+    } else if (selectedQuantity === "2 Gross") {
+      divisor = 288;
+    } else if (selectedQuantity === "60") {
+      divisor = 60;
+    } else if (selectedQuantity === " 90") {
+      divisor = 90;
+    } else if (selectedQuantity === "100") {
+      divisor = 100;
+    } else if (selectedQuantity === "200") {
+      divisor = 200;
+    } else if (selectedQuantity === "300") {
+      divisor = 300;
+    }
+
+    if (divisor > 1) {
+      setBoxCount(Number((editPackets / divisor).toFixed(1)));
+    } else {
+      setBoxCount(0); // reset boxCount for other quantities
+    }
+  };
+
   const handleDelete = async (returnId: string, productId: string) => {
     try {
       await fetch(`/api/return`, {
@@ -162,6 +193,17 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
     setReturnId(returnId);
     setPackagingId(productId);
     setShowModal(true);
+  };
+
+  const handleBoxEntry = (
+    productId: string,
+    packets: number,
+    gross: number
+  ) => {
+    setPackagingId(productId);
+    setEditPackets(packets);
+    setEditGross(gross);
+    setShowBoxModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -191,6 +233,37 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
       setGross(0);
     } catch (err) {
       console.error("[return_POST]", err);
+    }
+  };
+
+  const handleBoxSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const requestBody = {
+      date: new Date().toISOString(),
+      packagingId,
+      packets: Number(formData.get("packets")),
+      gross: Number(formData.get("gross")),
+      boxCount: Number(formData.get("boxCount")),
+      quantity: Number(formData.get("quantity")),
+    };
+
+    try {
+      await fetch(`/api/box`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+      toast.success("Box Successfully Created!");
+      setShowBoxModal(false);
+      getPackagingProducts();
+      setSelectedProduct(undefined);
+      setWeight(undefined);
+      setPackets(undefined);
+      setRemainingWeight(0);
+      setGross(0); // deault value
+    } catch (err) {
+      console.error("[box_POST]", err);
     }
   };
 
@@ -314,6 +387,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                         <th className="border px-4 py-2 text-left">Weight</th>
                         <th className="border px-4 py-2 text-left">Dozens</th>
                         <th className="border px-4 py-2 text-left">Packets</th>
+                        <th className="border px-4 py-2 text-left">Boxing</th>
                         <th className="border px-4 py-2 text-left">Edit</th>
                         <th className="border px-4 py-2 text-left">Delete</th>
                       </tr>
@@ -335,6 +409,19 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                             <td className="border px-4 py-2">{ret.weight}</td>
                             <td className="border px-4 py-2">{ret.gross}</td>
                             <td className="border px-4 py-2">{ret.packets}</td>
+                            <td className="border px-4 py-2">
+                              <Button
+                                onClick={() => {
+                                  handleBoxEntry(
+                                    entry._id,
+                                    ret.packets,
+                                    ret.gross
+                                  );
+                                }}
+                              >
+                                <Box />
+                              </Button>
+                            </td>
                             <td className="border px-4 py-2">
                               <Button
                                 onClick={() => {
@@ -369,6 +456,245 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                                       className="bg-red-1 text-white"
                                       onClick={() => {
                                         handleDelete(ret._id, entry._id);
+                                      }}
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                  <Modal
+                    isOpen={showModal}
+                    onClose={() => {
+                      setShowModal(false);
+                    }}
+                    title={"Edit Return Entry Details"}
+                  >
+                    <form
+                      className="grid grid-cols-1 gap-4 md:grid-cols-5"
+                      onSubmit={handleEditSubmit}
+                    >
+                      <div className="flex flex-col">
+                        <label htmlFor="packets" className="mb-1 font-medium">
+                          Packets
+                        </label>
+                        <input
+                          type="number"
+                          name="packets"
+                          id="packets"
+                          required
+                          className="p-2 border border-gray-300 rounded"
+                          value={editPackets}
+                          onChange={(e) => {
+                            setEditPackets(Number(e.target.value));
+                            setEditGross(
+                              Number((Number(e.target.value) / 122).toFixed(1))
+                            );
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex flex-col">
+                        <label htmlFor="gross" className="mb-1 font-medium">
+                          Dozens
+                        </label>
+                        <input
+                          type="number"
+                          name="gross"
+                          id="gross"
+                          required
+                          className="p-2 border border-gray-300 rounded"
+                          value={editGross}
+                          onChange={(e) => setEditGross(Number(e.target.value))}
+                        />
+                      </div>
+
+                      <div className="flex items-center col-span-1 md:col-span-5">
+                        <button
+                          type="submit"
+                          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+                        >
+                          Update
+                        </button>
+                      </div>
+                    </form>
+                  </Modal>
+
+                  <Modal
+                    isOpen={showBoxModal}
+                    onClose={() => {
+                      setShowBoxModal(false);
+                    }}
+                    title={"Add Box Entry Details"}
+                  >
+                    <form
+                      className="grid grid-cols-1 gap-4 md:grid-cols-4"
+                      onSubmit={handleBoxSubmit}
+                    >
+                      <div className="flex flex-col">
+                        <label htmlFor="packets" className="mb-1 font-medium">
+                          Packets
+                        </label>
+                        <input
+                          type="number"
+                          name="packets"
+                          id="packets"
+                          required
+                          className="p-2 border border-gray-300 rounded"
+                          value={editPackets}
+                          onChange={(e) => {
+                            setEditPackets(Number(e.target.value));
+                            setEditGross(
+                              Number((Number(e.target.value) / 122).toFixed(1))
+                            );
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex flex-col">
+                        <label htmlFor="gross" className="mb-1 font-medium">
+                          Dozens
+                        </label>
+                        <input
+                          type="number"
+                          name="gross"
+                          id="gross"
+                          required
+                          className="p-2 border border-gray-300 rounded"
+                          value={editGross}
+                          onChange={(e) => setEditGross(Number(e.target.value))}
+                        />
+                      </div>
+
+                      <div className="flex flex-col">
+                        <label htmlFor="gross" className="mb-1 font-medium">
+                          Quantity
+                        </label>
+                        <select
+                          className="border-gray border-2 w-32 h-10 rounded-lg"
+                          name="quantity"
+                          id="quantity"
+                          required
+                          onChange={handleQuantityChange}
+                        >
+                          <option value="">Select Quantity</option>
+                          <option value="1 Gross">1 Gross</option>
+                          <option value="2 Gross">2 Gross</option>
+                          <option value="60">60</option>
+                          <option value="90">90</option>
+                          <option value="100">100</option>
+                          <option value="200">200</option>
+                          <option value="300">300</option>
+                        </select>
+                      </div>
+
+                      <div className="ml-4 flex flex-col">
+                        <label htmlFor="gross" className="mb-1 font-medium">
+                          Box Count
+                        </label>
+                        <input
+                          type="number"
+                          name="boxCount"
+                          id="boxCount"
+                          required
+                          placeholder="Box Count"
+                          className="p-2 border border-gray-300 rounded"
+                          value={boxCount}
+                        />
+                      </div>
+
+                      <div className="flex items-center col-span-1 md:col-span-5">
+                        <button
+                          type="submit"
+                          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+                        >
+                          Submit
+                        </button>
+                      </div>
+                    </form>
+                  </Modal>
+                </div>
+              )}
+
+              {/* Box Products Table */}
+              <h2 className="text-xl font-semibold mt-8 mb-2">Box Entry</h2>
+              {packagingProducts.length === 0 ? (
+                <p className="text-gray-500">No Box Entries.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full table-auto border-collapse border border-gray-200">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="border px-4 py-2 text-left">Date</th>
+                        <th className="border px-4 py-2 text-left">Product</th>
+                        <th className="border px-4 py-2 text-left">Packets</th>
+                        <th className="border px-4 py-2 text-left">Dozens</th>
+                        <th className="border px-4 py-2 text-left">
+                          Box Count
+                        </th>
+                        <th className="border px-4 py-2 text-left">Quantity</th>
+                        <th className="border px-4 py-2 text-left">Edit</th>
+                        <th className="border px-4 py-2 text-left">Delete</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {packagingProducts.flatMap((entry) =>
+                        entry.box.map((b) => (
+                          <tr key={b._id}>
+                            <td className="border px-4 py-2">
+                              {new Date(b.date).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              })}
+                            </td>
+                            <td className="border px-4 py-2">
+                              {entry.product}
+                            </td>
+                            <td className="border px-4 py-2">{b.packets}</td>
+                            <td className="border px-4 py-2">{b.gross}</td>
+                            <td className="border px-4 py-2">{b.boxCount}</td>
+                            <td className="border px-4 py-2">{b.quantity}</td>
+                            <td className="border px-4 py-2">
+                              <Button
+                                onClick={() => {
+                                  handleReturnEdit(b._id, entry._id);
+                                }}
+                              >
+                                <Pencil />
+                              </Button>
+                            </td>
+                            <td className="border px-4 py-2">
+                              <AlertDialog>
+                                <AlertDialogTrigger>
+                                  <Button className="bg-red-1 text-white">
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="bg-white text-grey-1">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-red-1">
+                                      Are you absolutely sure?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This will
+                                      permanently delete your Return Entry
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>
+                                      Cancel
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-red-1 text-white"
+                                      onClick={() => {
+                                        handleDelete(b._id, entry._id);
                                       }}
                                     >
                                       Delete
