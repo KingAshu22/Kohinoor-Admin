@@ -25,7 +25,7 @@ const formSchema = z.object({
   date: z.string().min(2),
   product: z.string().min(2),
   totalWeight: z.preprocess((val) => Number(val), z.number().positive()),
-  partialWeight: z.preprocess((val) => Number(val), z.number().positive()), // Partial Weight in grams
+  partialWeight: z.preprocess((val) => Number(val), z.number().positive()),
   vendor: z.string().min(2),
   rate: z.preprocess((val) => Number(val), z.number().positive().optional()),
   gross: z.number().positive().optional(),
@@ -33,7 +33,7 @@ const formSchema = z.object({
 });
 
 interface PackagingFormProps {
-  initialData?: materialType | null; // Must have "?" to make it optional
+  initialData?: PackagingProductType | null; // Make it optional
 }
 
 const PackagingForm: React.FC<PackagingFormProps> = ({ initialData }) => {
@@ -68,12 +68,22 @@ const PackagingForm: React.FC<PackagingFormProps> = ({ initialData }) => {
     fetchData();
   }, []);
 
+  // Set form default values based on initialData
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData
-      ? { ...initialData }
+      ? {
+          date: initialData.packaging[0]?.date || "", // Date from packaging array
+          product: initialData.product || "",
+          totalWeight: initialData.totalWeight || 0,
+          partialWeight: initialData.packaging[0]?.partialWeight || 0,
+          vendor: initialData.vendor || "",
+          rate: initialData.rate || 4,
+          gross: initialData.packaging[0]?.gross || 0,
+          pieces: initialData.packaging[0]?.pieces || 0,
+        }
       : {
-          date: new Date().toISOString().split("T")[0], // Pre-fill with today's date
+          date: new Date().toISOString().split("T")[0],
           product: "",
           totalWeight: 0,
           partialWeight: 0,
@@ -96,8 +106,8 @@ const PackagingForm: React.FC<PackagingFormProps> = ({ initialData }) => {
     totalWeight: number,
     partialWeight: number
   ) => {
-    const gross = Math.round(totalWeight / (partialWeight / 1000)); // Convert grams to kg
-    const pieces = gross * 144; // Assuming 144 pieces per gross
+    const gross = Math.round(totalWeight / (partialWeight / 1000));
+    const pieces = gross * 144;
     return { gross, pieces };
   };
 
@@ -146,6 +156,7 @@ const PackagingForm: React.FC<PackagingFormProps> = ({ initialData }) => {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-8">
+            {/* Date */}
             <FormField
               control={form.control}
               name="date"
@@ -164,7 +175,7 @@ const PackagingForm: React.FC<PackagingFormProps> = ({ initialData }) => {
                 </FormItem>
               )}
             />
-
+            {/* Product */}
             <FormField
               control={form.control}
               name="product"
@@ -188,7 +199,7 @@ const PackagingForm: React.FC<PackagingFormProps> = ({ initialData }) => {
                 </FormItem>
               )}
             />
-
+            {/* Vendor */}
             <FormField
               control={form.control}
               name="vendor"
@@ -212,7 +223,7 @@ const PackagingForm: React.FC<PackagingFormProps> = ({ initialData }) => {
                 </FormItem>
               )}
             />
-
+            {/* Total Weight */}
             <FormField
               control={form.control}
               name="totalWeight"
@@ -243,7 +254,7 @@ const PackagingForm: React.FC<PackagingFormProps> = ({ initialData }) => {
                 </FormItem>
               )}
             />
-
+            {/* Partial Weight */}
             <FormField
               control={form.control}
               name="partialWeight"
@@ -274,26 +285,27 @@ const PackagingForm: React.FC<PackagingFormProps> = ({ initialData }) => {
                 </FormItem>
               )}
             />
-
+            {/* Rate */}
             <FormField
               control={form.control}
               name="rate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Rate/Gross</FormLabel>
+                  <FormLabel>Rate (Rs.)</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
-                      placeholder="Rate/Gross"
-                      className="border-gray-200 border-2 p-2 rounded-lg w-full"
+                      placeholder="Rate"
                       {...field}
                       onKeyDown={handleKeyPress}
+                      className="border-gray-200 border-2 p-2 rounded-lg w-full"
                     />
                   </FormControl>
                   <FormMessage className="text-red-1" />
                 </FormItem>
               )}
             />
+            {/* Gross */}
             <FormField
               control={form.control}
               name="gross"
@@ -303,17 +315,17 @@ const PackagingForm: React.FC<PackagingFormProps> = ({ initialData }) => {
                   <FormControl>
                     <Input
                       type="number"
+                      disabled
                       placeholder="Gross"
-                      className="w-28"
                       {...field}
-                      onKeyDown={handleKeyPress}
+                      className="border-gray-200 border-2 p-2 rounded-lg w-full"
                     />
                   </FormControl>
                   <FormMessage className="text-red-1" />
                 </FormItem>
               )}
             />
-
+            {/* Pieces */}
             <FormField
               control={form.control}
               name="pieces"
@@ -323,21 +335,20 @@ const PackagingForm: React.FC<PackagingFormProps> = ({ initialData }) => {
                   <FormControl>
                     <Input
                       type="number"
+                      disabled
                       placeholder="Pieces"
-                      className="w-28"
                       {...field}
-                      onKeyDown={handleKeyPress}
+                      className="border-gray-200 border-2 p-2 rounded-lg w-full"
                     />
                   </FormControl>
                   <FormMessage className="text-red-1" />
                 </FormItem>
               )}
             />
-
-            <Button type="submit" className="bg-blue-1 text-white">
-              {initialData ? "Update" : "Submit"}
-            </Button>
           </div>
+          <Button type="submit" className="bg-blue-1 text-white">
+            {initialData ? "Update Packaging Entry" : "Add Packaging Entry"}
+          </Button>
         </form>
       </Form>
     </div>

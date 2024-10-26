@@ -6,9 +6,8 @@ import React, { useEffect, useState } from "react";
 
 const PackagingDetails = ({ params }: { params: { packagingId: string } }) => {
   const [loading, setLoading] = useState(true);
-  const [PackagingDetails, setPackagingDetails] = useState<materialType | null>(
-    null
-  );
+  const [PackagingDetails, setPackagingDetails] =
+    useState<PackagingProductType | null>(null);
 
   const getPackagingDetails = async () => {
     try {

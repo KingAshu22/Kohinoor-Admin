@@ -63,6 +63,8 @@ type PackagingProductType = {
   remainingWeight: number;
   isCompleted: boolean;
   packaging: {
+    date: string;
+    partialWeight: number;
     weight: number;
     gross: number;
     pieces: number;

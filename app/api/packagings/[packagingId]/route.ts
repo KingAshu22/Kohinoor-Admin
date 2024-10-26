@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDB } from "@/lib/mongoDB";
 import Packaging from "@/lib/models/Packaging";
 
+type Product = {
+    product: string;
+    totalWeight: number;
+    partialWeight: number;
+    vendor: string;
+    rate: number;
+    gross: number;
+    pieces: number;
+};
+
 export const GET = async (
     req: NextRequest,
     { params }: { params: { packagingId: string } }
@@ -30,47 +40,71 @@ export const PUT = async (
     { params }: { params: { packagingId: string } }
 ) => {
     try {
+        // Connect to the database
         await connectToDB();
 
-        let packaging = await Packaging.findById(params.packagingId);
-
+        // Find existing packaging entry by ID
+        const packaging = await Packaging.findById(params.packagingId);
         if (!packaging) {
             return new NextResponse("Packaging not found", { status: 404 });
         }
 
-        const { date, products } = await req.json();
+        // Extract and validate request data
+        const { date, product, totalWeight, partialWeight, vendor, rate, gross, pieces }: {
+            date: string;
+            product: string;
+            totalWeight: number;
+            partialWeight: number;
+            vendor: string;
+            rate: number;
+            gross: number;
+            pieces: number;
+        } = await req.json();
 
-        if (!date || !products || !products.length) {
-            return new NextResponse("Date and products array are required", { status: 400 });
+        console.log("Received Data:", {
+            date,
+            product,
+            totalWeight,
+            partialWeight,
+            vendor,
+            rate,
+            gross,
+            pieces
+        });
+
+        // Validate required fields
+        if (
+            !date ||
+            !product ||
+            totalWeight == null ||
+            partialWeight == null ||
+            !vendor ||
+            rate == null ||
+            gross == null ||
+            pieces == null
+        ) {
+            return new NextResponse("All fields are required", { status: 400 });
         }
 
-        const invalidProduct = products.some((product: any) =>
-            !product.product ||
-            !product.totalWeight ||
-            !product.partialWeight ||
-            !product.vendor ||
-            !product.rate ||
-            !product.gross ||
-            !product.pieces
-        );
-
-        if (invalidProduct) {
-            return new NextResponse("Incomplete product data", {
-                status: 400,
-            });
-        }
-
-        packaging = await Packaging.findByIdAndUpdate(
-            params.packagingId,
-            { date, products },
-            { new: true }
-        );
+        // Update the packaging entry in the database
+        packaging.date = date;
+        packaging.products = [
+            {
+                product,
+                totalWeight,
+                partialWeight,
+                vendor,
+                rate,
+                gross,
+                pieces
+            }
+        ];
 
         await packaging.save();
 
         return NextResponse.json(packaging, { status: 200 });
     } catch (err) {
-        console.log("[packagingId_PUT]", err);
+        console.error("[packagingId_PUT]", err);
         return new NextResponse("Internal error", { status: 500 });
     }
 };
