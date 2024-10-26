@@ -147,19 +147,17 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
     let divisor = 1;
 
     if (selectedQuantity === "1 Gross") {
-      divisor = 144;
+      divisor = 12;
     } else if (selectedQuantity === "2 Gross") {
-      divisor = 288;
+      divisor = 24;
     } else if (selectedQuantity === "60") {
-      divisor = 60;
-    } else if (selectedQuantity === " 90") {
-      divisor = 90;
+      divisor = 20;
     } else if (selectedQuantity === "100") {
-      divisor = 100;
+      divisor = 10;
     } else if (selectedQuantity === "200") {
-      divisor = 200;
+      divisor = 20;
     } else if (selectedQuantity === "300") {
-      divisor = 300;
+      divisor = 30;
     }
 
     if (divisor > 1) {
@@ -551,7 +549,7 @@ const VendorEntryPage = ({ params }: { params: { vendorId: string } }) => {
                           onChange={(e) => {
                             setEditPackets(Number(e.target.value));
                             setEditGross(
-                              Number((Number(e.target.value) / 122).toFixed(1))
+                              Number((Number(e.target.value) / 12).toFixed(1))
                             );
                           }}
                         />
