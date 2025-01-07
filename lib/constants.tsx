@@ -9,6 +9,7 @@ import {
   Shapes,
   ShoppingBag,
   Tag,
+  Undo2,
   User,
   UsersRound,
 } from "lucide-react";
@@ -63,6 +64,11 @@ export const navLinks = [
     url: "/packaging",
     icon: <Package />,
     label: "Packaging",
+  },
+  {
+    url: "/return",
+    icon: <Undo2 />,
+    label: "Return",
   },
   {
     url: "/box",

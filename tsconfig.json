@@ -32,7 +32,16 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "app/api/packagings/vendor/[vendorId]/route.js"
+    "app/api/packagings/vendor/[vendorId]/route.js",
+    "components/packaging/PackagingForm.jsx",
+    "app/(dashboard)/packaging/new/page.jsx",
+    "app/api/packagings/route.js",
+    "components/packaging/PackagingColumn.jsx",
+    "app/api/return/route.js",
+    "app/(dashboard)/return/new/page.jsx",
+    "app/api/return/[returnId]/route.js",
+    "app/(dashboard)/vendors/salary/[vendorId]/page.jsx",
+    "app/api/packagings/vendor/[vendorName]/route.js"
   ],
   "exclude": [
     "node_modules"

@@ -3,15 +3,15 @@
 import Loader from "@/components/custom ui/Loader";
 import { useEffect, useState, useRef } from "react";
 
-const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
+const VendorDetails = ({ params }) => {
   const [loading, setLoading] = useState(true);
-  const [vendorDetails, setVendorDetails] = useState<VendorType | null>(null);
+  const [vendorDetails, setVendorDetails] = useState(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [salaryData, setSalaryData] = useState<any[]>([]);
+  const [salaryData, setSalaryData] = useState([]);
   const [total, setTotal] = useState(0);
 
-  const printRef = useRef<HTMLDivElement>(null);
+  const printRef = useRef(null);
 
   // Fetch Vendor Details
   const getVendorDetails = async () => {
@@ -23,65 +23,66 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
       setVendorDetails(data);
       setLoading(false);
     } catch (err) {
-      console.log("[vendorId_GET]", err);
+      console.error("[vendorId_GET]", err);
     }
   };
 
-  // Fetch Salary Details
-  const getSalaryDetails = async () => {
+  // Fetch Salary Details for Work From Home Vendors
+  const getSalaryDetailsForWFH = async () => {
     try {
-      const res = await fetch(
-        `/api/vendors/salary/${params.vendorId}?startDate=${startDate}&endDate=${endDate}`,
-        { method: "GET" }
-      );
-      const data = await res.json();
+      // Fetch combined data for packaging and return entries
+      const res = await fetch(`/api/packagings/vendor/${vendorDetails.name}`, {
+        method: "GET",
+      });
 
-      let totalAmount = 0;
+      if (!res.ok) {
+        throw new Error(`Error fetching data: ${res.statusText}`);
+      }
 
-      const formattedData =
-        vendorDetails?.type === "Work From Office"
-          ? Array.isArray(data)
-            ? data
-              .flatMap((entry: any) =>
-                entry.products.map((product: any) => {
-                  const amount = product.rate * product.sheetCount;
-                  totalAmount += amount;
-                  return {
-                    date: entry.date,
-                    product: product.product,
-                    rate: product.rate,
-                    gross: product.sheetCount,
-                    amount,
-                  };
-                })
-              )
-            : []
-          : Array.isArray(data)
-            ? data.flatMap((entry: any) =>
-              entry.products.map((product: any) => {
-                const amount = product.rate * product.gross;
-                totalAmount += amount;
-                return {
-                  date: entry.date,
-                  product: product.product,
-                  rate: product.rate,
-                  gross: product.gross,
-                  amount,
-                };
-              })
-            )
-            : [];
+      const { result, totalAmount } = await res.json();
 
-      setSalaryData(formattedData);
+      if (!Array.isArray(result)) {
+        console.error("Invalid response structure:", { result, totalAmount });
+        return;
+      }
+
+      // Group data by product name and sum up the values
+      const groupedData = result.reduce((acc, entry) => {
+        const existingEntry = acc.find(item => item.product === entry.product);
+        if (existingEntry) {
+          existingEntry.packagingWeight += Number(entry.packagingWeight || 0);
+          existingEntry.returnedWeight += Number(entry.returnedWeight || 0);
+          existingEntry.weightDiff += Number(entry.weightDiff || 0);
+          existingEntry.rate = Number(entry.rate) || 0;
+          existingEntry.packetValue = Number(entry.packetValue) || 0;
+          existingEntry.amount += Number(entry.amount || 0);
+        } else {
+          acc.push({
+            product: entry.product,
+            weightTaken: Number(entry.weightTaken || 0),
+            weightReturned: Number(entry.weightReturned || 0),
+            weightDiff: Number(entry.weightDiff || 0),
+            rate: Number(entry.rate) || 0,
+            packetValue: Number(entry.packetValue) || 0,
+            amount: Number(entry.amount || 0),
+          });
+        }
+        return acc;
+      }, []);
+
+      // Set the state with the grouped data and total amount
+      setSalaryData(groupedData);
       setTotal(totalAmount);
     } catch (err) {
-      console.log("[salary_GET]", err);
+      console.error("[getSalaryDetailsForWFH] Error:", err);
     }
   };
 
   const handleFetchSalary = () => {
     if (startDate && endDate) {
-      getSalaryDetails();
+      if (vendorDetails.type === "Work From Home") {
+        getSalaryDetailsForWFH();
+      }
     } else {
       alert("Please select both start and end dates");
     }
@@ -149,8 +150,11 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
               <tr>
                 <th className="py-2 px-4 border">Date</th>
                 <th className="py-2 px-4 border">Product Name</th>
+                <th className="py-2 px-4 border">Weight Taken</th>
+                <th className="py-2 px-4 border">Weight Returned</th>
+                <th className="py-2 px-4 border">Weight Difference</th>
                 <th className="py-2 px-4 border">Rate</th>
-                <th className="py-2 px-4 border">Count</th>
+                <th className="py-2 px-4 border">Packet Value</th>
                 <th className="py-2 px-4 border">Subtotal</th>
               </tr>
             </thead>
@@ -161,12 +165,11 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
                     {new Date(item.date).toLocaleDateString("en-IN")}
                   </td>
                   <td className="py-2 px-4 border">{item.product}</td>
-                  <td className="py-2 px-4 border">
-                    {item.rate.toLocaleString("en-IN")}
-                  </td>
-                  <td className="py-2 px-4 border">
-                    {item.gross.toLocaleString("en-IN")}
-                  </td>
+                  <td className="py-2 px-4 border">{item.weightTaken}</td>
+                  <td className="py-2 px-4 border">{item.weightReturned}</td>
+                  <td className="py-2 px-4 border">{item.weightDiff}</td>
+                  <td className="py-2 px-4 border">{item.rate}</td>
+                  <td className="py-2 px-4 border">{item.packetValue}</td>
                   <td className="py-2 px-4 border">
                     ₹ {parseFloat(item.amount.toFixed(2)).toLocaleString("en-IN")}
                   </td>
@@ -175,7 +178,9 @@ const VendorDetails = ({ params }: { params: { vendorId: string } }) => {
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={3} className="py-2 px-4 border font-bold">Total</td>
+                <td colSpan={7} className="py-2 px-4 border font-bold">
+                  Total
+                </td>
                 <td className="py-2 px-4 border font-bold">
                   ₹ {parseFloat(total.toFixed(2)).toLocaleString("en-IN")}/-
                 </td>
