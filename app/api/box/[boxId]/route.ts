@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDB } from "@/lib/mongoDB";
 import Box from "@/lib/models/Box";
 
+// GET Method - Fetch specific box by ID
 export const GET = async (
     req: NextRequest,
     { params }: { params: { boxId: string } }
@@ -25,6 +26,7 @@ export const GET = async (
     }
 };
 
+// PUT Method - Update box entry by ID
 export const PUT = async (
     req: NextRequest,
     { params }: { params: { boxId: string } }
@@ -40,10 +42,12 @@ export const PUT = async (
 
         const { date, products } = await req.json();
 
+        // Ensure 'date' and 'products' are provided
         if (!date || !products || !products.length) {
             return new NextResponse("Date and products array are required", { status: 400 });
         }
 
+        // Validate product data
         const invalidProduct = products.some((product: any) =>
             !product.product ||
             !product.boxCount ||
@@ -56,12 +60,14 @@ export const PUT = async (
             });
         }
 
+        // Update box with the new data
         box = await Box.findByIdAndUpdate(
             params.boxId,
             { date, products },
             { new: true }
         );
 
+        // Save the updated box entry
         await box.save();
 
         return NextResponse.json(box, { status: 200 });
@@ -71,6 +77,7 @@ export const PUT = async (
     }
 };
 
+// DELETE Method - Delete box entry by ID
 export const DELETE = async (
     req: NextRequest,
     { params }: { params: { boxId: string } }

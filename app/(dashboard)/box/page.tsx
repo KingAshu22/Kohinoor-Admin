@@ -22,10 +22,7 @@ const Box = () => {
         method: "GET",
       });
       const data = await res.json();
-      const filteredData = data.filter(
-        (item: PackagingProductType) => item.box && item.box.length > 0
-      );
-      setBox(filteredData);
+      setBox(data);
       setLoading(false);
     } catch (err) {
       console.log("[box_GET]", err);

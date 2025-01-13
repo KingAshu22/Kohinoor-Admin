@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "../ui/button";
 
-export const columns: ColumnDef<PackagingProductType>[] = [
+export const columns = [
   {
     accessorKey: "box",
     header: ({ column }) => (
@@ -19,10 +19,9 @@ export const columns: ColumnDef<PackagingProductType>[] = [
       </Button>
     ),
     cell: ({ row }) => {
-      const boxItems = row.original.box;
       return (
         <Link href={`/box/${row.original._id}`} className="hover:text-red-1">
-          {boxItems.map((boxItem) => boxItem.date).join(", ")}
+          {row.original.date}
         </Link>
       );
     },
@@ -39,9 +38,9 @@ export const columns: ColumnDef<PackagingProductType>[] = [
       </Button>
     ),
     cell: ({ row }) => {
-      const boxItems = row.original.box;
+      const boxItems = row.original.products;
       return (
-        <div>{boxItems.map((boxItem) => boxItem.boxCount).join(", ")}</div>
+        <div>{boxItems.map((product) => product.boxCount).join(", ")}</div>
       );
     },
   },
@@ -57,9 +56,9 @@ export const columns: ColumnDef<PackagingProductType>[] = [
       </Button>
     ),
     cell: ({ row }) => {
-      const boxItems = row.original.box;
+      const boxItems = row.original.products;
       return (
-        <div>{boxItems.map((boxItem) => boxItem.quantity).join(", ")}</div>
+        <div>{boxItems.map((product) => product.quantity).join(", ")}</div>
       );
     },
   },

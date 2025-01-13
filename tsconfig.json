@@ -41,7 +41,8 @@
     "app/(dashboard)/return/new/page.jsx",
     "app/api/return/[returnId]/route.js",
     "app/(dashboard)/vendors/salary/[vendorId]/page.jsx",
-    "app/api/packagings/vendor/[vendorName]/route.js"
+    "app/api/packagings/vendor/[vendorName]/route.js",
+    "components/box/BoxColumn.jsx"
   ],
   "exclude": [
     "node_modules"

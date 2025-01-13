@@ -29,6 +29,46 @@ export const columns = [
         },
     },
     {
+        accessorKey: "products",
+        header: ({ column }) => {
+            return (
+                <Button
+                    variant="ghost"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                >
+                    Products
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            );
+        },
+        cell: ({ row }) => {
+            const products = Array.from(
+                new Set(row.original.entries.map((product) => product.product))
+            );
+            return <div>{products.join(", ")}</div>;
+        },
+    },
+    {
+        accessorKey: "vendor",
+        header: ({ column }) => {
+            return (
+                <Button
+                    variant="ghost"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                >
+                    Vendor
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            );
+        },
+        cell: ({ row }) => {
+            const products = Array.from(
+                new Set(row.original.entries.map((product) => product.vendor))
+            );
+            return <div>{products.join(", ")}</div>;
+        },
+    },
+    {
         id: "actions",
         cell: ({ row }) => <Delete item="return" id={row.original._id} />,
     },
