@@ -50,7 +50,14 @@ export const columns: ColumnDef<VendorType>[] = [
             Entry
           </Button>
         </Link>
-        <Link href={`/vendors/salary/${row.original._id}`} passHref>
+        <Link
+          href={
+            row.original.type === "Work From Home"
+              ? `/vendors/salary/${row.original._id}`
+              : `/vendors/office-salary/${row.original._id}`
+          }
+          passHref
+        >
           <Button className="bg-green-600 text-white ml-4 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
             Salary
           </Button>

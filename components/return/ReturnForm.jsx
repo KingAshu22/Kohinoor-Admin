@@ -65,6 +65,7 @@ const ReturnForm = ({ initialData }) => {
             setValue(`entries[${index}].gross`, "");
             setValue(`entries[${index}].pieces`, "");
         }
+        setValue(`entries[${index}].rate`, 4);
     };
 
     const onSubmit = async (values) => {
