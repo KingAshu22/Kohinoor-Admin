@@ -185,6 +185,7 @@ const VendorDetails = ({ params }) => {
                   <th className="py-2 px-4 border">Date</th>
                   <th className="py-2 px-4 border">Product Name</th>
                   <th className="py-2 px-4 border">Weight Returned</th>
+                  <th className="py-2 px-4 border">Packets</th>
                 </tr>
               </thead>
               <tbody>
@@ -196,6 +197,7 @@ const VendorDetails = ({ params }) => {
                       </td>
                       <td className="py-2 px-4 border">{e.product}</td>
                       <td className="py-2 px-4 border">{e.weight}</td>
+                      <td className="py-2 px-4 border">{e.packets.toLocaleString("en-in")}</td>
                     </tr>
                   ))
                 )}
@@ -215,7 +217,8 @@ const VendorDetails = ({ params }) => {
                 <th className="py-2 px-4 border">Weight Taken</th>
                 <th className="py-2 px-4 border">Weight Returned</th>
                 <th className="py-2 px-4 border">Remaining Weight</th>
-                <th className="py-2 px-4 border">Rate</th>
+                <th className="py-2 px-4 border">Rate/12 Packets</th>
+                <th className="py-2 px-4 border">Packets</th>
                 <th className="py-2 px-4 border">Amount</th>
               </tr>
             </thead>
@@ -227,6 +230,7 @@ const VendorDetails = ({ params }) => {
                   <td className="py-2 px-4 border">{item.returnedWeight}</td>
                   <td className="py-2 px-4 border">{item.weightDiff}</td>
                   <td className="py-2 px-4 border">{item.rate}</td>
+                  <td className="py-2 px-4 border">{item.totalPackets.toLocaleString("en-IN")}</td>
                   <td className="py-2 px-4 border">
                     ₹ {parseFloat(item.subtotal.toFixed(2)).toLocaleString("en-IN")}
                   </td>
@@ -235,7 +239,7 @@ const VendorDetails = ({ params }) => {
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={5} className="py-2 px-4 border font-bold">
+                <td colSpan={6} className="py-2 px-4 border font-bold">
                   Total
                 </td>
                 <td className="py-2 px-4 border font-bold">

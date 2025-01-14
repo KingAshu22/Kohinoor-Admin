@@ -48,69 +48,56 @@ export const GET = async (req, { params }) => {
             entries: entry.entries.filter((e) => e.vendor === vendorName),
         }));
 
-        // Summarized data for the bottom table
-        const summarizedData = packagingEntries.flatMap((packaging) =>
+        // Summarize totals by product
+        const productSummary = {};
+
+        // Process packaging entries
+        packagingEntries.forEach((packaging) => {
             packaging.entries
                 .filter((entry) => entry.vendor === vendorName)
-                .map((packagingEntry) => {
-                    const relatedReturn = returnEntries.flatMap((ret) =>
-                        ret.entries.filter((entry) => entry.product === packagingEntry.product)
-                    );
+                .forEach((packagingEntry) => {
+                    const { product, totalWeight, rate } = packagingEntry;
 
-                    // Calculate total weight returned
-                    const totalReturnedWeight = relatedReturn.reduce(
-                        (sum, retEntry) => sum + retEntry.weight,
-                        0
-                    );
+                    if (!productSummary[product]) {
+                        productSummary[product] = {
+                            product,
+                            packagingWeight: 0,
+                            returnedWeight: 0,
+                            rate,
+                            totalPackets: 0,
+                            subtotal: 0,
+                        };
+                    }
 
-                    // Calculate weight difference
-                    const weightDiff = packagingEntry.totalWeight - totalReturnedWeight;
+                    productSummary[product].packagingWeight += totalWeight;
+                });
+        });
 
-                    // Calculate total packets
-                    const totalPackets = relatedReturn.reduce(
-                        (sum, retEntry) => sum + retEntry.packets,
-                        0
-                    );
+        // Process return entries
+        returnEntries.forEach((ret) => {
+            ret.entries
+                .filter((entry) => entry.vendor === vendorName)
+                .forEach((returnEntry) => {
+                    const { product, weight, packets } = returnEntry;
 
-                    // Calculate subtotal
-                    const subtotal = (totalPackets / 12) * packagingEntry.rate;
+                    if (productSummary[product]) {
+                        productSummary[product].returnedWeight += weight;
+                        productSummary[product].totalPackets += packets;
+                    }
+                });
+        });
 
-                    return {
-                        product: packagingEntry.product,
-                        packagingWeight: packagingEntry.totalWeight,
-                        returnedWeight: totalReturnedWeight,
-                        weightDiff,
-                        rate: packagingEntry.rate,
-                        totalPackets,
-                        subtotal,
-                    };
-                })
-        );
+        // Calculate weight difference and subtotal for each product
+        const summaryArray = Object.values(productSummary).map((item) => {
+            const weightDiff = item.packagingWeight - item.returnedWeight;
+            const subtotal = (item.totalPackets / 12) * item.rate;
 
-        // Summarize totals for each product
-        const summaryByProduct = summarizedData.reduce((acc, item) => {
-            if (!acc[item.product]) {
-                acc[item.product] = {
-                    product: item.product,
-                    packagingWeight: 0,
-                    returnedWeight: 0,
-                    weightDiff: 0,
-                    totalPackets: 0,
-                    rate: item.rate,
-                    subtotal: 0,
-                };
-            }
-
-            acc[item.product].packagingWeight += item.packagingWeight;
-            acc[item.product].returnedWeight += item.returnedWeight;
-            acc[item.product].weightDiff += item.weightDiff;
-            acc[item.product].totalPackets += item.totalPackets;
-            acc[item.product].subtotal += item.subtotal;
-
-            return acc;
-        }, {});
-
-        const summaryArray = Object.values(summaryByProduct);
+            return {
+                ...item,
+                weightDiff,
+                subtotal,
+            };
+        });
 
         // Calculate total of all subtotals
         const totalAmount = summaryArray.reduce((sum, item) => sum + item.subtotal, 0);
